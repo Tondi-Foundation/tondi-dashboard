@@ -22,6 +22,8 @@ pub struct TondiGrpcClient {
     url: String,
     network: Network,
     is_connected: Arc<AtomicBool>,
+    // 添加事件通知通道
+    event_sender: Arc<Mutex<Option<tokio::sync::mpsc::Sender<tondi_wallet_core::events::Events>>>>,
 }
 
 impl TondiGrpcClient {
@@ -37,6 +39,7 @@ impl TondiGrpcClient {
                     url: url.clone(),
                     network,
                     is_connected: Arc::new(AtomicBool::new(true)),
+                    event_sender: Arc::new(Mutex::new(None)),
                 })
             }
             Err(_e) => {
@@ -46,6 +49,7 @@ impl TondiGrpcClient {
                     url: url.clone(),
                     network,
                     is_connected: Arc::new(AtomicBool::new(false)),
+                    event_sender: Arc::new(Mutex::new(None)),
                 })
             }
         }
@@ -93,6 +97,34 @@ impl TondiGrpcClient {
     /// 获取服务器URL
     pub fn url(&self) -> Option<String> {
         Some(self.url.clone())
+    }
+
+    /// 设置事件发送器，用于触发钱包事件
+    pub fn set_event_sender(&self, sender: tokio::sync::mpsc::Sender<tondi_wallet_core::events::Events>) {
+        if let Ok(mut guard) = self.event_sender.lock() {
+            *guard = Some(sender);
+        }
+    }
+
+    /// 触发余额更新事件
+    async fn trigger_balance_update(&self, account_id: tondi_wallet_core::prelude::AccountId, balance: tondi_wallet_core::prelude::Balance) {
+        // 克隆sender以避免MutexGuard跨越await边界
+        let sender = {
+            if let Ok(guard) = self.event_sender.lock() {
+                guard.as_ref().cloned()
+            } else {
+                None
+            }
+        };
+        
+        if let Some(sender) = sender {
+            let balance_event = tondi_wallet_core::events::Events::Balance { balance: Some(balance), id: account_id.into() };
+            if let Err(e) = sender.send(balance_event).await {
+                println!("[TONDI GRPC] 发送余额更新事件失败: {}", e);
+            } else {
+                println!("[TONDI GRPC] 成功发送余额更新事件: account_id={:?}", account_id);
+            }
+        }
     }
 }
 
@@ -268,7 +300,63 @@ impl RpcApi for TondiGrpcClient {
             // Call the real gRPC client
             match grpc_client.get_metrics_call(None, request).await {
                 Ok(response) => {
-                    println!("[TONDI GRPC] Successfully got metrics from remote node: {:?}", response);
+                    println!("[TONDI GRPC] 成功从远程节点获取metrics: {:?}", response);
+                    
+                    // 添加详细的process metrics调试信息
+                    if let Some(process_metrics) = &response.process_metrics {
+                        let raw_cpu_usage = process_metrics.cpu_usage;
+                        
+                        // 分析CPU使用率的单位
+                        let cpu_usage_analysis = if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
+                            format!("小数形式: {} -> 应该是 {}%", raw_cpu_usage, raw_cpu_usage * 100.0)
+                        } else if raw_cpu_usage > 1.0 && raw_cpu_usage <= 100.0 {
+                            format!("百分比形式: {}%", raw_cpu_usage)
+                        } else if raw_cpu_usage > 100.0 {
+                            format!("异常高值: {} -> 可能应该是 {}%", raw_cpu_usage, raw_cpu_usage / 100.0)
+                        } else {
+                            format!("其他: {}", raw_cpu_usage)
+                        };
+                        
+                        println!("[TONDI GRPC] ✅ 成功获取process metrics:");
+                        println!("  - CPU使用率: {}% (单位分析: {})", raw_cpu_usage, cpu_usage_analysis);
+                        println!("  - CPU核心数: {}", process_metrics.core_num);
+                        println!("  - 内存使用: {} bytes", process_metrics.resident_set_size);
+                        println!("  - 虚拟内存: {} bytes", process_metrics.virtual_memory_size);
+                        println!("  - 文件描述符: {}", process_metrics.fd_num);
+                        println!("  - 磁盘读取: {} bytes", process_metrics.disk_io_read_bytes);
+                        println!("  - 磁盘读取速度: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                        println!("  - 磁盘写入: {} bytes", process_metrics.disk_io_write_bytes);
+                        println!("  - 磁盘写入速度: {} bytes/sec", process_metrics.disk_io_write_per_sec);
+                        
+                        // 特别关注CPU使用率的单位问题
+                        if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
+                            println!("[TONDI GRPC] 🔍 发现CPU单位问题:");
+                            println!("  - 原始值: {} (可能是小数形式)", raw_cpu_usage);
+                            println!("  - 实际应该是: {}%", raw_cpu_usage * 100.0);
+                            println!("  - 这解释了为什么Dashboard显示1.2%而不是12%！");
+                        }
+                    } else {
+                        println!("[TONDI GRPC] ⚠️  没有获取到process metrics数据");
+                        println!("  请求参数: process_metrics={}", _include_process_metrics);
+                        println!("  可能的原因:");
+                        println!("    1. tondi节点没有启用process metrics收集");
+                        println!("    2. tondi节点版本不支持process metrics");
+                        println!("    3. gRPC服务配置问题");
+                    }
+                    
+                    // 检查其他metrics类型
+                    if let Some(_consensus_metrics) = &response.consensus_metrics {
+                        println!("[TONDI GRPC] ✅ 成功获取consensus metrics");
+                    } else {
+                        println!("[TONDI GRPC] ⚠️  没有获取到consensus metrics数据");
+                    }
+                    
+                    if let Some(_bandwidth_metrics) = &response.bandwidth_metrics {
+                        println!("[TONDI GRPC] ✅ 成功获取bandwidth metrics");
+                    } else {
+                        println!("[TONDI GRPC] ⚠️  没有获取到bandwidth metrics数据");
+                    }
+                    
                     Ok(response)
                 }
                 Err(e) => {
@@ -1109,6 +1197,28 @@ impl RpcApi for TondiGrpcClient {
             match grpc_client.get_balance_by_address_call(None, request).await {
                 Ok(response) => {
                     println!("[TONDI GRPC] Successfully got balance from remote node: {:?}", response);
+                    
+                    // 尝试触发余额更新事件
+                    let balance_value = response.balance;
+                    if balance_value > 0 {
+                        println!("[TONDI GRPC] 获取到余额: {} sompi", balance_value);
+                        
+                        // 注意：这里需要从地址获取账户ID，暂时使用默认值
+                        // TODO: 实现从地址到账户ID的映射
+                        let account_id = tondi_wallet_core::prelude::AccountId::from_hex("0000000000000000000000000000000000000000000000000000000000000000").unwrap_or_else(|_| {
+                            tondi_wallet_core::prelude::AccountId::from_hex("1111111111111111111111111111111111111111111111111111111111111111").expect("Should create valid default AccountId")
+                        });
+                        
+                        // 创建内部Balance结构 - 使用Default构造
+                        let internal_balance = tondi_wallet_core::prelude::Balance::default();
+                        
+                        // 触发余额更新事件
+                        self.trigger_balance_update(account_id, internal_balance).await;
+                        println!("[TONDI GRPC] 已触发余额更新事件");
+                    } else {
+                        println!("[TONDI GRPC] 余额为0或无效");
+                    }
+                    
                     Ok(response)
                 }
                 Err(e) => {

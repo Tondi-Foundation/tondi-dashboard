@@ -1,13 +1,7 @@
 use crate::imports::*;
 
-pub mod repaint_service;
-pub use repaint_service::RepaintService;
-
-pub mod tondi;
-pub use tondi::TondiService;
-
-pub mod peer_monitor;
-pub use peer_monitor::PeerMonitorService;
+pub mod blockdag_monitor;
+pub use blockdag_monitor::BlockDagMonitorService;
 
 pub mod feerate_monitor;
 pub use feerate_monitor::FeerateMonitorService;
@@ -20,18 +14,20 @@ pub use update_monitor::UpdateMonitorService;
 
 pub mod metrics_monitor;
 pub use metrics_monitor::MetricsService;
-cfg_if! {
-    if #[cfg(not(feature = "lean"))] {
 
-        pub mod blockdag_monitor;
-        pub use blockdag_monitor::BlockDagMonitorService;
-    }
-}
+pub mod peer_monitor;
+pub use peer_monitor::PeerMonitorService;
+
+pub mod repaint_service;
+pub use repaint_service::RepaintService;
+
+pub mod tondi;
+pub use tondi::TondiService;
 
 /// Service is a core component of the Tondi Dashboard application responsible for
 /// running application services and communication between these services.
 #[async_trait]
-pub trait Service: Sync + Send {
+pub trait Service: Sync + Send + DowncastSync {
     fn name(&self) -> &'static str;
 
     /// Start the service
@@ -64,3 +60,6 @@ pub trait Service: Sync + Send {
         Ok(())
     }
 }
+
+// 为Service trait实现DowncastSync
+impl_downcast!(Service);

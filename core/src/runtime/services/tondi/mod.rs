@@ -503,8 +503,30 @@ impl TondiService {
                                 // 绑定gRPC客户端到钱包
                                 if let Some(wallet) = self.core_wallet() {
                                     println!("[TONDI SERVICE DEBUG] 开始绑定gRPC客户端到钱包");
-                                    wallet.bind_rpc(Some(grpc_rpc)).await.unwrap();
+                                    wallet.bind_rpc(Some(grpc_rpc.clone())).await.unwrap();
                                     println!("[TONDI SERVICE DEBUG] gRPC客户端已成功绑定到钱包");
+                                    
+                                    // 设置gRPC客户端的事件发送器，用于触发余额更新事件
+                                    if let Some(grpc_client) = grpc_rpc.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
+                                        // 创建事件发送通道
+                                        let (event_sender, mut event_receiver) = tokio::sync::mpsc::channel::<tondi_wallet_core::events::Events>(100);
+                                        
+                                        // 设置gRPC客户端的事件发送器
+                                        grpc_client.set_event_sender(event_sender);
+                                        println!("[TONDI SERVICE DEBUG] 已设置gRPC客户端事件发送器");
+                                        
+                                        // 启动事件处理任务
+                                        let application_events = self.application_events.clone();
+                                        tokio::spawn(async move {
+                                            while let Some(event) = event_receiver.recv().await {
+                                                // 将钱包事件转发到应用程序事件通道
+                                                if let Err(e) = application_events.sender.send(crate::events::Events::Wallet { event: Box::new(event) }).await {
+                                                    println!("[TONDI SERVICE] 转发钱包事件失败: {}", e);
+                                                }
+                                            }
+                                        });
+                                        println!("[TONDI SERVICE DEBUG] 已启动钱包事件处理任务");
+                                    }
                                     
                                     println!("[TONDI SERVICE DEBUG] 启动钱包服务");
                                     wallet
@@ -512,6 +534,45 @@ impl TondiService {
                                         .await
                                         .expect("Unable to start wallet service");
                                     println!("[TONDI SERVICE DEBUG] 钱包服务已启动");
+                                    
+                                    // 启动后主动查询账户余额
+                                    println!("[TONDI SERVICE DEBUG] 开始主动查询账户余额");
+                                    if let Some(grpc_client) = grpc_rpc.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
+                                        // 获取钱包状态以获取账户信息
+                                        match wallet.get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
+                                            Ok(status_response) => {
+                                                if let Some(account_descriptors) = status_response.account_descriptors {
+                                                    println!("[TONDI SERVICE DEBUG] 找到 {} 个账户，开始查询余额", account_descriptors.len());
+                                                    
+                                                    for account_descriptor in account_descriptors {
+                                                        if let Some(receive_address) = account_descriptor.receive_address() {
+                                                            println!("[TONDI SERVICE DEBUG] 查询账户 {} 的余额，地址: {}", account_descriptor.name_or_id(), receive_address);
+                                                            
+                                                            // 创建余额查询请求 - 使用正确的地址类型
+                                                            let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
+                                                                tondi_rpc_core::RpcAddress::from(receive_address.clone())
+                                                            );
+                                                            
+                                                            // 查询余额
+                                                            match grpc_client.get_balance_by_address_call(None, balance_request).await {
+                                                                Ok(balance_response) => {
+                                                                    println!("[TONDI SERVICE DEBUG] 账户 {} 余额查询成功: {} sompi", account_descriptor.name_or_id(), balance_response.balance);
+                                                                }
+                                                                Err(e) => {
+                                                                    println!("[TONDI SERVICE DEBUG] 账户 {} 余额查询失败: {}", account_descriptor.name_or_id(), e);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    println!("[TONDI SERVICE DEBUG] 没有找到账户描述符");
+                                                }
+                                            }
+                                            Err(e) => {
+                                                println!("[TONDI SERVICE DEBUG] 获取钱包状态失败: {}", e);
+                                            }
+                                        }
+                                    }
                                     
                                     // 手动触发连接事件，因为gRPC客户端不会自动触发
                                     println!("[TONDI SERVICE DEBUG] 手动触发 CoreWallet::Connect 事件");
@@ -528,6 +589,19 @@ impl TondiService {
                                 for service in crate::runtime::runtime().services().into_iter() {
                                     service.attach_rpc(&rpc_api).await?;
                                 }
+                                
+                                // 移除重复的Balance监控调用
+                                // 启动后立即刷新一次余额
+                                // 暂时注释掉，先让代码编译通过
+                                /*
+                                if let Some(balance_monitor) = crate::runtime::runtime().services().into_iter().find(|s| s.name() == "balance-monitor") {
+                                    // 使用正确的类型转换方法
+                                    if let Ok(balance_monitor) = balance_monitor.clone().downcast_arc::<crate::runtime::services::balance_monitor::BalanceMonitorService>() {
+                                        balance_monitor.refresh_now();
+                                        println!("[TONDI SERVICE] 已触发余额监控服务立即刷新");
+                                    }
+                                }
+                                */
                                 
                                 Ok(())
                             }

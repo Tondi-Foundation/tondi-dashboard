@@ -21,6 +21,9 @@ pub use services::Service;
 use services::*;
 use system::*;
 
+// 移除重复的BalanceMonitorService导入
+// use services::balance_monitor::BalanceMonitorService;
+
 pub struct Inner {
     services: Mutex<Vec<Arc<dyn Service>>>,
     repaint_service: Arc<RepaintService>,
@@ -38,6 +41,8 @@ pub struct Inner {
     feerate_monitor_service: Arc<FeerateMonitorService>,
     update_monitor_service: Arc<UpdateMonitorService>,
     market_monitor_service: Arc<MarketMonitorService>,
+    // 移除重复的balance_monitor_service
+    // balance_monitor_service: Arc<BalanceMonitorService>,
 
     // #[cfg(not(feature = "lean"))]
     metrics_service: Arc<MetricsService>,
@@ -90,6 +95,11 @@ impl Runtime {
             settings,
         ));
 
+        // 移除重复的BalanceMonitorService初始化
+        // let balance_monitor_service = Arc::new(BalanceMonitorService::new(
+        //     application_events.clone(),
+        // ));
+
         let metrics_service = Arc::new(MetricsService::new(application_events.clone(), settings));
         cfg_if! {
             if #[cfg(not(feature = "lean"))] {
@@ -112,6 +122,8 @@ impl Runtime {
             feerate_monitor_service.clone(),
             market_monitor_service.clone(),
             update_monitor_service.clone(),
+            // 移除重复的balance_monitor_service
+            // balance_monitor_service.clone(),
             // #[cfg(not(feature = "lean"))]
             metrics_service.clone(),
             #[cfg(not(feature = "lean"))]
@@ -128,15 +140,15 @@ impl Runtime {
                 peer_monitor_service,
                 market_monitor_service,
                 update_monitor_service,
+                // #[cfg(not(feature = "lean"))]
+                metrics_service,
+                #[cfg(not(feature = "lean"))]
+                block_dag_monitor_service,
                 egui_ctx: egui_ctx.clone(),
                 is_running: Arc::new(AtomicBool::new(false)),
                 start_time: Instant::now(),
                 system: Some(system),
                 adaptor,
-                // #[cfg(not(feature = "lean"))]
-                metrics_service,
-                #[cfg(not(feature = "lean"))]
-                block_dag_monitor_service,
             }),
         };
 
