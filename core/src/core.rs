@@ -767,12 +767,10 @@ impl Core {
                 self.state.node_metrics = Some(snapshot);
                 
                 // 如果能收到metrics数据，说明已经连接了，手动设置连接状态
-                if !self.state.is_connected {
-                    println!("[CORE DEBUG] 收到metrics数据，设置连接状态为true");
-                    self.state.is_connected = true;
-                    self.state.network_id = Some(self.settings.node.network.into());
-                    println!("[CORE DEBUG] 连接状态已设置：is_connected=true, network={:?}", self.settings.node.network);
-                }
+                // println!("[CORE DEBUG] 收到metrics数据，设置连接状态为true");
+                self.state.is_connected = true;
+                self.state.network_id = Some(self.settings.node.network.into());
+                // println!("[CORE DEBUG] 连接状态已设置：is_connected=true, network={:?}", self.settings.node.network);
             }
             Events::MempoolSize { mempool_size } => {
                 self.network_pressure

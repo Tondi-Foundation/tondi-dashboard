@@ -73,7 +73,7 @@ impl ModuleT for Node {
                             } else {
                                 let metrics = core.state().metrics();
                                 let active_peers = metrics.as_ref().map(|m| m.data.node_active_peers).unwrap_or_default();
-                                println!("[Node] No peer info available, active_peers from metrics: {}", active_peers);
+                                // println!("[Node] No peer info available, active_peers from metrics: {}", active_peers);
                                 
                                 if active_peers > 0 {
                                     ui.horizontal(|ui| {

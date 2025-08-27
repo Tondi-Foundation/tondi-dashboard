@@ -95,10 +95,6 @@ impl<'context> BalancePane<'context> {
         } else {
             ui.horizontal(|ui| {
                 ui.label(i18n("Balance: N/A"));
-                ui.add_space(10.);
-                // 移除手动刷新按钮，因为Balance监控服务已经被移除
-                // 余额更新应该通过现有的CoreWallet::Balance事件机制
-                ui.label(i18n("余额将通过钱包事件自动更新"));
             });
         }
 

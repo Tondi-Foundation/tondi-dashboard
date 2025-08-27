@@ -536,7 +536,7 @@ impl Overview {
                                                     if *metric == Metric::NodeCpuUsage {
                                                         // println!("[OVERVIEW] CPU指标 {} 的最新值: {}% (原始数据: {}, 数据点数: {})", metric.as_str(), val, val, data.len());
                                                         // 检查格式化后的显示
-                                                        let formatted = metric.format(val, true, true);
+                                                        let _formatted = metric.format(val, true, true);
                                                         // println!("[OVERVIEW] CPU格式化后显示: '{}'", formatted);
                                                     }
                                                     val

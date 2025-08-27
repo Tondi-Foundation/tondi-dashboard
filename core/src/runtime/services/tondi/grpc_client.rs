@@ -278,7 +278,7 @@ impl RpcApi for TondiGrpcClient {
                         let raw_cpu_usage = process_metrics.cpu_usage;
                         
                         // 分析CPU使用率的单位
-                        let cpu_usage_analysis = if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
+                        let _cpu_usage_analysis = if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
                             format!("小数形式: {} -> 应该是 {}%", raw_cpu_usage, raw_cpu_usage * 100.0)
                         } else if raw_cpu_usage > 1.0 && raw_cpu_usage <= 100.0 {
                             format!("百分比形式: {}%", raw_cpu_usage)
@@ -289,7 +289,7 @@ impl RpcApi for TondiGrpcClient {
                         };
                         
                         // println!("[TONDI GRPC] ✅ 成功获取process metrics:");
-                        // println!("  - CPU使用率: {}% (单位分析: {})", raw_cpu_usage, cpu_usage_analysis);
+                        // println!("  - CPU使用率: {}% (单位分析: {})", raw_cpu_usage, _cpu_usage_analysis);
                         // println!("  - CPU核心数: {}", process_metrics.core_num);
                         // println!("  - 内存使用: {} bytes", process_metrics.resident_set_size);
                         // println!("  - 虚拟内存: {} bytes", process_metrics.virtual_memory_size);
@@ -313,11 +313,11 @@ impl RpcApi for TondiGrpcClient {
                             // println!("[TONDI GRPC] ✅ 磁盘读取速度正常: {} bytes/sec", process_metrics.disk_io_read_per_sec);
                         }
                         
-                                    if process_metrics.disk_io_read_bytes == 0 {
-                // println!("[TONDI GRPC] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
-            } else {
-                // println!("[TONDI GRPC] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
-            }
+                        if process_metrics.disk_io_read_bytes == 0 {
+                            // println!("[TONDI GRPC] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
+                        } else {
+                            // println!("[TONDI GRPC] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
+                        }
                         
                         // 特别关注CPU使用率的单位问题
                         if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
