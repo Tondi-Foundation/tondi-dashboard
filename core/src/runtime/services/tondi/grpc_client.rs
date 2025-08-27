@@ -266,15 +266,15 @@ impl RpcApi for TondiGrpcClient {
     }
 
     async fn get_metrics(&self, _include_process_metrics: bool, _include_connection_metrics: bool, _include_bandwidth_metrics: bool, _include_consensus_metrics: bool, _include_storage_metrics: bool, _include_custom_metrics: bool) -> RpcResult<GetMetricsResponse> {
-        println!("[TONDI GRPC] get_metrics called with parameters: process={}, connection={}, bandwidth={}, consensus={}, storage={}, custom={}", 
-            _include_process_metrics, _include_connection_metrics, _include_bandwidth_metrics, _include_consensus_metrics, _include_storage_metrics, _include_custom_metrics);
-        println!("[TONDI GRPC] Current connection status: is_connected={}", self.is_connected());
-        println!("[TONDI GRPC] Current URL: {}", self.url);
+        // println!("[TONDI GRPC] get_metrics called with parameters: process={}, connection={}, bandwidth={}, consensus={}, storage={}, custom={}", 
+        //     _include_process_metrics, _include_connection_metrics, _include_bandwidth_metrics, _include_consensus_metrics, _include_storage_metrics, _include_custom_metrics);
+        // println!("[TONDI GRPC] Current connection status: is_connected={}", self.is_connected());
+        // println!("[TONDI GRPC] Current URL: {}", self.url);
 
         if !self.is_connected() {
-            println!("[TONDI GRPC] Attempting to reconnect...");
+            // println!("[TONDI GRPC] Attempting to reconnect...");
             if let Err(e) = self.ensure_connected().await {
-                println!("[TONDI GRPC] Reconnection failed: {}", e);
+                // println!("[TONDI GRPC] Reconnection failed: {}", e);
                 return Err(tondi_rpc_core::RpcError::General(format!("Not connected: {}", e)));
             }
         }
@@ -285,7 +285,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get metrics");
+            // println!("[TONDI GRPC] Using real gRPC client to get metrics");
             
             // Create GetMetricsRequest
             let request = tondi_rpc_core::GetMetricsRequest {
@@ -300,7 +300,7 @@ impl RpcApi for TondiGrpcClient {
             // Call the real gRPC client
             match grpc_client.get_metrics_call(None, request).await {
                 Ok(response) => {
-                    println!("[TONDI GRPC] 成功从远程节点获取metrics: {:?}", response);
+                    // println!("[TONDI GRPC] 成功从远程节点获取metrics: {:?}", response);
                     
                     // 添加详细的process metrics调试信息
                     if let Some(process_metrics) = &response.process_metrics {
@@ -317,76 +317,76 @@ impl RpcApi for TondiGrpcClient {
                             format!("其他: {}", raw_cpu_usage)
                         };
                         
-                        println!("[TONDI GRPC] ✅ 成功获取process metrics:");
-                        println!("  - CPU使用率: {}% (单位分析: {})", raw_cpu_usage, cpu_usage_analysis);
-                        println!("  - CPU核心数: {}", process_metrics.core_num);
-                        println!("  - 内存使用: {} bytes", process_metrics.resident_set_size);
-                        println!("  - 虚拟内存: {} bytes", process_metrics.virtual_memory_size);
-                        println!("  - 文件描述符: {}", process_metrics.fd_num);
-                        println!("  - 磁盘读取: {} bytes", process_metrics.disk_io_read_bytes);
-                        println!("  - 磁盘读取速度: {} bytes/sec", process_metrics.disk_io_read_per_sec);
-                        println!("  - 磁盘写入: {} bytes", process_metrics.disk_io_write_bytes);
-                        println!("  - 磁盘写入速度: {} bytes/sec", process_metrics.disk_io_write_per_sec);
+                        // println!("[TONDI GRPC] ✅ 成功获取process metrics:");
+                        // println!("  - CPU使用率: {}% (单位分析: {})", raw_cpu_usage, cpu_usage_analysis);
+                        // println!("  - CPU核心数: {}", process_metrics.core_num);
+                        // println!("  - 内存使用: {} bytes", process_metrics.resident_set_size);
+                        // println!("  - 虚拟内存: {} bytes", process_metrics.virtual_memory_size);
+                        // println!("  - 文件描述符: {}", process_metrics.fd_num);
+                        // println!("  - 磁盘读取: {} bytes", process_metrics.disk_io_read_bytes);
+                        // println!("  - 磁盘读取速度: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                        // println!("  - 磁盘写入: {} bytes", process_metrics.disk_io_write_bytes);
+                        // println!("  - 磁盘写入速度: {} bytes/sec", process_metrics.disk_io_write_per_sec);
                         
                         // 特别关注磁盘I/O指标
                         if process_metrics.disk_io_read_per_sec == 0.0 {
-                            println!("[TONDI GRPC] 🔍 磁盘读取速度为0分析:");
-                            println!("  - 原始值: {} bytes/sec", process_metrics.disk_io_read_per_sec);
-                            println!("  - 可能的原因:");
-                            println!("    1. tondi节点确实没有磁盘读取活动");
-                            println!("    2. tondi节点版本不支持磁盘I/O监控");
-                            println!("    3. 操作系统限制进程级别的磁盘I/O统计");
-                            println!("    4. 需要特殊权限才能获取磁盘I/O信息");
-                            println!("  💡 建议: 尝试在tondi节点上进行一些文件操作");
+                            // println!("[TONDI GRPC] 🔍 磁盘读取速度为0分析:");
+                            // println!("  - 原始值: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                            // println!("  - 可能的原因:");
+                            // println!("    1. tondi节点确实没有磁盘读取活动");
+                            // println!("    2. tondi节点版本不支持磁盘I/O监控");
+                            // println!("    3. 操作系统限制进程级别的磁盘I/O统计");
+                            // println!("    4. 需要特殊权限才能获取磁盘I/O信息");
+                            // println!("  💡 建议: 尝试在tondi节点上进行一些文件操作");
                         } else {
-                            println!("[TONDI GRPC] ✅ 磁盘读取速度正常: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                            // println!("[TONDI GRPC] ✅ 磁盘读取速度正常: {} bytes/sec", process_metrics.disk_io_read_per_sec);
                         }
                         
                                     if process_metrics.disk_io_read_bytes == 0 {
-                println!("[TONDI GRPC] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
+                // println!("[TONDI GRPC] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
             } else {
-                println!("[TONDI GRPC] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
+                // println!("[TONDI GRPC] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
             }
                         
                         // 特别关注CPU使用率的单位问题
                         if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
-                            println!("[TONDI GRPC] 🔍 发现CPU单位问题:");
-                            println!("  - 原始值: {} (可能是小数形式)", raw_cpu_usage);
-                            println!("  - 实际应该是: {}%", raw_cpu_usage * 100.0);
-                            println!("  - 这解释了为什么Dashboard显示1.2%而不是12%！");
+                            // println!("[TONDI GRPC] 🔍 发现CPU单位问题:");
+                            // println!("  - 原始值: {} (可能是小数形式)", raw_cpu_usage);
+                            // println!("  - 实际应该是: {}%", raw_cpu_usage * 100.0);
+                            // println!("  - 这解释了为什么Dashboard显示1.2%而不是12%！");
                         }
                     } else {
-                        println!("[TONDI GRPC] ⚠️  没有获取到process metrics数据");
-                        println!("  请求参数: process_metrics={}", _include_process_metrics);
-                        println!("  可能的原因:");
-                        println!("    1. tondi节点没有启用process metrics收集");
-                        println!("    2. tondi节点版本不支持process metrics");
-                        println!("    3. gRPC服务配置问题");
+                        // println!("[TONDI GRPC] ⚠️  没有获取到process metrics数据");
+                        // println!("  请求参数: process_metrics={}", _include_process_metrics);
+                        // println!("  可能的原因:");
+                        // println!("    1. tondi节点没有启用process metrics收集");
+                        // println!("    2. tondi节点版本不支持process metrics");
+                        // println!("    3. gRPC服务配置问题");
                     }
                     
                     // 检查其他metrics类型
                     if let Some(_consensus_metrics) = &response.consensus_metrics {
-                        println!("[TONDI GRPC] ✅ 成功获取consensus metrics");
+                        // println!("[TONDI GRPC] ✅ 成功获取consensus metrics");
                     } else {
-                        println!("[TONDI GRPC] ⚠️  没有获取到consensus metrics数据");
+                        // println!("[TONDI GRPC] ⚠️  没有获取到consensus metrics数据");
                     }
                     
                     if let Some(_bandwidth_metrics) = &response.bandwidth_metrics {
-                        println!("[TONDI GRPC] ✅ 成功获取bandwidth metrics");
+                        // println!("[TONDI GRPC] ✅ 成功获取bandwidth metrics");
                     } else {
-                        println!("[TONDI GRPC] ⚠️  没有获取到bandwidth metrics数据");
+                        // println!("[TONDI GRPC] ⚠️  没有获取到bandwidth metrics数据");
                     }
                     
                     Ok(response)
                 }
                 Err(e) => {
-                    println!("[TONDI GRPC] Failed to get metrics from remote node: {}", e);
+                    // println!("[TONDI GRPC] Failed to get metrics from remote node: {}", e);
                     // Return error instead of hardcoded 0 values if remote call fails
                     Err(tondi_rpc_core::RpcError::General(format!("Failed to get metrics from remote node: {}", e)))
                 }
             }
         } else {
-            println!("[TONDI GRPC] No gRPC client available");
+            // println!("[TONDI GRPC] No gRPC client available");
             Err(tondi_rpc_core::RpcError::General("No gRPC client available".to_string()))
         }
     }
@@ -475,16 +475,16 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get metrics");
+            // println!("[TONDI GRPC] Using real gRPC client to get metrics");
             
             // Call the real gRPC client
             match grpc_client.get_metrics_call(None, request).await {
                 Ok(response) => {
-                    println!("[TONDI GRPC] Successfully got metrics from remote node: {:?}", response);
+                    // println!("[TONDI GRPC] Successfully got metrics from remote node: {:?}", response);
                     Ok(response)
                 }
                 Err(e) => {
-                    println!("[TONDI GRPC] Failed to get metrics from remote node: {}", e);
+                    // println!("[TONDI GRPC] Failed to get metrics from remote node: {}", e);
                     Err(tondi_rpc_core::RpcError::General(format!("Failed to get metrics from remote node: {}", e)))
                 }
             }

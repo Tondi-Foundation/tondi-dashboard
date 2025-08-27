@@ -523,32 +523,32 @@ impl Overview {
                 ui.horizontal(|ui| {
                     for _ in 0..graph_columns {
                         if let Some(metric) = metric_iter.next() {
-                            // 直接从metrics_data获取最新值，而不是从snapshot.get(metric)
-                            let value = {
-                                let metrics_data = self.runtime.metrics_service().metrics_data();
-                                if let Some(data) = metrics_data.get(metric) {
-                                    if let Some(latest) = data.last() {
-                                        let val = latest.y;
-                                        // 特别关注磁盘读取指标和CPU指标
-                                        if *metric == Metric::NodeDiskIoReadBytes || *metric == Metric::NodeDiskIoReadPerSec {
-                                            println!("[OVERVIEW] 磁盘读取指标 {} 的最新值: {} (数据点数: {})", metric.as_str(), val, data.len());
-                                        }
-                                        if *metric == Metric::NodeCpuUsage {
-                                            println!("[OVERVIEW] CPU指标 {} 的最新值: {}% (原始数据: {}, 数据点数: {})", metric.as_str(), val, val, data.len());
-                                            // 检查格式化后的显示
-                                            let formatted = metric.format(val, true, true);
-                                            println!("[OVERVIEW] CPU格式化后显示: '{}'", formatted);
-                                        }
-                                        val
-                                    } else {
-                                        println!("[OVERVIEW] 警告: metric {} 没有数据点", metric.as_str());
-                                        0.0
-                                    }
-                                } else {
-                                    println!("[OVERVIEW] 警告: metric {} 没有找到数据", metric.as_str());
-                                    0.0
-                                }
-                            };
+                                                                    // 直接从metrics_data获取最新值，而不是从snapshot.get(metric)
+                                        let value = {
+                                            let metrics_data = self.runtime.metrics_service().metrics_data();
+                                            if let Some(data) = metrics_data.get(metric) {
+                                                if let Some(latest) = data.last() {
+                                                    let val = latest.y;
+                                                    // 特别关注磁盘读取指标和CPU指标
+                                                    if *metric == Metric::NodeDiskIoReadBytes || *metric == Metric::NodeDiskIoReadPerSec {
+                                                        // println!("[OVERVIEW] 磁盘读取指标 {} 的最新值: {} (数据点数: {})", metric.as_str(), val, data.len());
+                                                    }
+                                                    if *metric == Metric::NodeCpuUsage {
+                                                        // println!("[OVERVIEW] CPU指标 {} 的最新值: {}% (原始数据: {}, 数据点数: {})", metric.as_str(), val, val, data.len());
+                                                        // 检查格式化后的显示
+                                                        let formatted = metric.format(val, true, true);
+                                                        // println!("[OVERVIEW] CPU格式化后显示: '{}'", formatted);
+                                                    }
+                                                    val
+                                                } else {
+                                                    // println!("[OVERVIEW] 警告: metric {} 没有数据点", metric.as_str());
+                                                    0.0
+                                                }
+                                            } else {
+                                                // println!("[OVERVIEW] 警告: metric {} 没有找到数据", metric.as_str());
+                                                0.0
+                                            }
+                                        };
                             self.render_graph(ui,  *metric, value);
                         } else {
                             draw = false;
