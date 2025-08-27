@@ -508,27 +508,11 @@ impl TondiService {
                                     
                                     // 设置gRPC客户端的事件发送器，用于触发余额更新事件
                                     if let Some(grpc_client) = grpc_rpc.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
-                                        // 创建事件发送通道
-                                        let (event_sender, mut event_receiver) = tokio::sync::mpsc::channel::<tondi_wallet_core::events::Events>(100);
-                                        
-                                        // 设置gRPC客户端的事件发送器
-                                        grpc_client.set_event_sender(event_sender);
-                                        println!("[TONDI SERVICE DEBUG] 已设置gRPC客户端事件发送器");
-                                        
-                                        // 启动事件处理任务
-                                        let application_events = self.application_events.clone();
-                                        tokio::spawn(async move {
-                                            while let Some(event) = event_receiver.recv().await {
-                                                // 将钱包事件转发到应用程序事件通道
-                                                if let Err(e) = application_events.sender.send(crate::events::Events::Wallet { event: Box::new(event) }).await {
-                                                    println!("[TONDI SERVICE] 转发钱包事件失败: {}", e);
-                                                }
-                                            }
-                                        });
-                                        println!("[TONDI SERVICE DEBUG] 已启动钱包事件处理任务");
+                                        // Removed event_sender setup - using passive event listening like kaspa-ng
+                                        println!("[TONDI SERVICE DEBUG] Using gRPC client with passive event listening");
                                     }
                                     
-                                    println!("[TONDI SERVICE DEBUG] 启动钱包服务");
+                                    println!("[TONDI SERVICE DEBUG] Starting wallet service");
                                     wallet
                                         .start()
                                         .await

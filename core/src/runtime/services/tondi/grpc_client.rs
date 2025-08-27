@@ -22,8 +22,7 @@ pub struct TondiGrpcClient {
     url: String,
     network: Network,
     is_connected: Arc<AtomicBool>,
-    // 添加事件通知通道
-    event_sender: Arc<Mutex<Option<tokio::sync::mpsc::Sender<tondi_wallet_core::events::Events>>>>,
+    // Removed event_sender: Arc<Mutex<Option<tokio::sync::mpsc::Sender<tondi_wallet_core::events::Events>>>>,
 }
 
 impl TondiGrpcClient {
@@ -39,7 +38,7 @@ impl TondiGrpcClient {
                     url: url.clone(),
                     network,
                     is_connected: Arc::new(AtomicBool::new(true)),
-                    event_sender: Arc::new(Mutex::new(None)),
+                    // Removed event_sender: Arc::new(Mutex::new(None)),
                 })
             }
             Err(_e) => {
@@ -49,7 +48,7 @@ impl TondiGrpcClient {
                     url: url.clone(),
                     network,
                     is_connected: Arc::new(AtomicBool::new(false)),
-                    event_sender: Arc::new(Mutex::new(None)),
+                    // Removed event_sender: Arc::new(Mutex::new(None)),
                 })
             }
         }
@@ -97,34 +96,6 @@ impl TondiGrpcClient {
     /// 获取服务器URL
     pub fn url(&self) -> Option<String> {
         Some(self.url.clone())
-    }
-
-    /// 设置事件发送器，用于触发钱包事件
-    pub fn set_event_sender(&self, sender: tokio::sync::mpsc::Sender<tondi_wallet_core::events::Events>) {
-        if let Ok(mut guard) = self.event_sender.lock() {
-            *guard = Some(sender);
-        }
-    }
-
-    /// 触发余额更新事件
-    async fn trigger_balance_update(&self, account_id: tondi_wallet_core::prelude::AccountId, balance: tondi_wallet_core::prelude::Balance) {
-        // 克隆sender以避免MutexGuard跨越await边界
-        let sender = {
-            if let Ok(guard) = self.event_sender.lock() {
-                guard.as_ref().cloned()
-            } else {
-                None
-            }
-        };
-        
-        if let Some(sender) = sender {
-            let balance_event = tondi_wallet_core::events::Events::Balance { balance: Some(balance), id: account_id.into() };
-            if let Err(e) = sender.send(balance_event).await {
-                println!("[TONDI GRPC] 发送余额更新事件失败: {}", e);
-            } else {
-                println!("[TONDI GRPC] 成功发送余额更新事件: account_id={:?}", account_id);
-            }
-        }
     }
 }
 
@@ -1213,32 +1184,10 @@ impl RpcApi for TondiGrpcClient {
         if let Some(grpc_client) = grpc_client {
             println!("[TONDI GRPC] Using real gRPC client to get balance by address");
             
-            // Call the real gRPC client
+            // Call the real gRPC client and return response directly - no event triggering
             match grpc_client.get_balance_by_address_call(None, request).await {
                 Ok(response) => {
                     println!("[TONDI GRPC] Successfully got balance from remote node: {:?}", response);
-                    
-                    // 尝试触发余额更新事件
-                    let balance_value = response.balance;
-                    if balance_value > 0 {
-                        println!("[TONDI GRPC] 获取到余额: {} sompi", balance_value);
-                        
-                        // 注意：这里需要从地址获取账户ID，暂时使用默认值
-                        // TODO: 实现从地址到账户ID的映射
-                        let account_id = tondi_wallet_core::prelude::AccountId::from_hex("0000000000000000000000000000000000000000000000000000000000000000").unwrap_or_else(|_| {
-                            tondi_wallet_core::prelude::AccountId::from_hex("1111111111111111111111111111111111111111111111111111111111111111").expect("Should create valid default AccountId")
-                        });
-                        
-                        // 创建内部Balance结构 - 使用Default构造
-                        let internal_balance = tondi_wallet_core::prelude::Balance::default();
-                        
-                        // 触发余额更新事件
-                        self.trigger_balance_update(account_id, internal_balance).await;
-                        println!("[TONDI GRPC] 已触发余额更新事件");
-                    } else {
-                        println!("[TONDI GRPC] 余额为0或无效");
-                    }
-                    
                     Ok(response)
                 }
                 Err(e) => {
