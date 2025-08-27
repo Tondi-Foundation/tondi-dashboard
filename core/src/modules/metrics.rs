@@ -23,6 +23,93 @@ impl Metrics {
     pub fn new(runtime: Runtime) -> Self {
         Self { runtime }
     }
+
+    /// 自定义指标值格式化，解决CPU和memory显示问题
+    fn format_metric_value(&self, metric: &Metric, value: f64) -> String {
+        match metric {
+            Metric::NodeCpuUsage => {
+                // CPU使用率：确保显示为百分比，处理可能的小数形式
+                let cpu_percent = if value <= 1.0 && value > 0.0 {
+                    // 如果是小数形式（如0.12），转换为百分比
+                    value * 100.0
+                } else {
+                    value
+                };
+                
+                if cpu_percent < 0.1 {
+                    format!("{:.3}%", cpu_percent)
+                } else if cpu_percent < 1.0 {
+                    format!("{:.2}%", cpu_percent)
+                } else {
+                    format!("{:.1}%", cpu_percent)
+                }
+            },
+            Metric::NodeResidentSetSizeBytes | Metric::NodeVirtualMemorySizeBytes => {
+                // 内存大小：转换为可读的KB/MB/GB格式
+                if value < 1024.0 {
+                    format!("{:.0} B", value)
+                } else if value < 1024.0 * 1024.0 {
+                    format!("{:.1} KB", value / 1024.0)
+                } else if value < 1024.0 * 1024.0 * 1024.0 {
+                    format!("{:.1} MB", value / (1024.0 * 1024.0))
+                } else {
+                    format!("{:.2} GB", value / (1024.0 * 1024.0 * 1024.0))
+                }
+            },
+            Metric::NodeDiskIoReadBytes | Metric::NodeDiskIoWriteBytes => {
+                // 磁盘I/O总字节数：转换为可读格式
+                if value < 1024.0 {
+                    format!("{:.0} B", value)
+                } else if value < 1024.0 * 1024.0 {
+                    format!("{:.1} KB", value / 1024.0)
+                } else if value < 1024.0 * 1024.0 * 1024.0 {
+                    format!("{:.1} MB", value / (1024.0 * 1024.0))
+                } else {
+                    format!("{:.2} GB", value / (1024.0 * 1024.0 * 1024.0))
+                }
+            },
+            Metric::NodeDiskIoReadPerSec | Metric::NodeDiskIoWritePerSec => {
+                // 磁盘I/O速度：转换为可读格式
+                if value < 1024.0 {
+                    format!("{:.0} B/s", value)
+                } else if value < 1024.0 * 1024.0 {
+                    format!("{:.1} KB/s", value / 1024.0)
+                } else if value < 1024.0 * 1024.0 * 1024.0 {
+                    format!("{:.1} MB/s", value / (1024.0 * 1024.0))
+                } else {
+                    format!("{:.2} GB/s", value / (1024.0 * 1024.0 * 1024.0))
+                }
+            },
+            Metric::NodeTotalBytesRx | Metric::NodeTotalBytesTx => {
+                // 网络总字节数：转换为可读格式
+                if value < 1024.0 {
+                    format!("{:.0} B", value)
+                } else if value < 1024.0 * 1024.0 {
+                    format!("{:.1} KB", value / 1024.0)
+                } else if value < 1024.0 * 1024.0 * 1024.0 {
+                    format!("{:.1} MB", value / (1024.0 * 1024.0))
+                } else {
+                    format!("{:.2} GB", value / (1024.0 * 1024.0 * 1024.0))
+                }
+            },
+            Metric::NodeTotalBytesRxPerSecond | Metric::NodeTotalBytesTxPerSecond => {
+                // 网络速度：转换为可读格式
+                if value < 1024.0 {
+                    format!("{:.0} B/s", value)
+                } else if value < 1024.0 * 1024.0 {
+                    format!("{:.1} KB/s", value / 1024.0)
+                } else if value < 1024.0 * 1024.0 * 1024.0 {
+                    format!("{:.1} MB/s", value / (1024.0 * 1024.0))
+                } else {
+                    format!("{:.2} GB/s", value / (1024.0 * 1024.0 * 1024.0))
+                }
+            },
+            _ => {
+                // 其他指标使用默认格式化
+                metric.format(value, true, true)
+            }
+        }
+    }
 }
 
 impl ModuleT for Metrics {
@@ -278,7 +365,7 @@ impl Metrics {
                         ui.add_space(8.);
                         ui.horizontal(|ui|{
                             ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                                ui.colored_label(theme_color().metrics_text_color, format!("{}: {}", i18n(metric.title().0), metric.format(metrics.get(&metric), true, false)));
+                                ui.colored_label(theme_color().metrics_text_color, format!("{}: {}", i18n(metric.title().0), self.format_metric_value(&metric, metrics.get(&metric))));
                             });
                         });
 
@@ -331,7 +418,20 @@ impl Metrics {
                                     Metric::NetworkPastMedianTime => {
                                         String::default()
                                     }
-                                    metric => metric.format(grid.value, true, true)
+                                    _ => {
+                                        // 使用自定义格式化方法
+                                        let cpu_percent = if metric == Metric::NodeCpuUsage && grid.value <= 1.0 && grid.value > 0.0 {
+                                            grid.value * 100.0
+                                        } else {
+                                            grid.value
+                                        };
+                                        
+                                        if metric == Metric::NodeCpuUsage {
+                                            format!("{:.1}%", cpu_percent)
+                                        } else {
+                                            metric.format(grid.value, true, true)
+                                        }
+                                    }
                                 }
                             })
                             .x_axis_formatter(move |grid, _range| {
@@ -353,7 +453,13 @@ impl Metrics {
                             .label_formatter(move |_name, point| {
                                 let PlotPoint { x, y } = point;
 
-                                format!("{} @ {}", metric.format(*y, true, true), DateTime::<chrono::Utc>::from_timestamp((x / 1000.0) as i64, 0)
+                                let formatted_value = if metric == Metric::NodeCpuUsage && *y <= 1.0 && *y > 0.0 {
+                                    format!("{:.1}%", *y * 100.0)
+                                } else {
+                                    metric.format(*y, true, true)
+                                };
+
+                                format!("{} @ {}", formatted_value, DateTime::<chrono::Utc>::from_timestamp((x / 1000.0) as i64, 0)
                                     .expect("could not parse timestamp")
                                     .with_timezone(&chrono::Local)
                                     .format("%H:%M:%S")
@@ -361,7 +467,11 @@ impl Metrics {
                             })                                                    
                             .coordinates_formatter(Corner::LeftTop, CoordinatesFormatter::new(move |point,_| {
                                 let PlotPoint { x: _, y } = point;
-                                metric.format(*y, true, true)
+                                if metric == Metric::NodeCpuUsage && *y <= 1.0 && *y > 0.0 {
+                                    format!("{:.1}%", *y * 100.0)
+                                } else {
+                                    metric.format(*y, true, true)
+                                }
                             }))
                             ;
 

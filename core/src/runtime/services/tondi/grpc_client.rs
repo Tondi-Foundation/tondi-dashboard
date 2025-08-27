@@ -328,6 +328,26 @@ impl RpcApi for TondiGrpcClient {
                         println!("  - 磁盘写入: {} bytes", process_metrics.disk_io_write_bytes);
                         println!("  - 磁盘写入速度: {} bytes/sec", process_metrics.disk_io_write_per_sec);
                         
+                        // 特别关注磁盘I/O指标
+                        if process_metrics.disk_io_read_per_sec == 0.0 {
+                            println!("[TONDI GRPC] 🔍 磁盘读取速度为0分析:");
+                            println!("  - 原始值: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                            println!("  - 可能的原因:");
+                            println!("    1. tondi节点确实没有磁盘读取活动");
+                            println!("    2. tondi节点版本不支持磁盘I/O监控");
+                            println!("    3. 操作系统限制进程级别的磁盘I/O统计");
+                            println!("    4. 需要特殊权限才能获取磁盘I/O信息");
+                            println!("  💡 建议: 尝试在tondi节点上进行一些文件操作");
+                        } else {
+                            println!("[TONDI GRPC] ✅ 磁盘读取速度正常: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+                        }
+                        
+                                    if process_metrics.disk_io_read_bytes == 0 {
+                println!("[TONDI GRPC] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
+            } else {
+                println!("[TONDI GRPC] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
+            }
+                        
                         // 特别关注CPU使用率的单位问题
                         if raw_cpu_usage <= 1.0 && raw_cpu_usage > 0.0 {
                             println!("[TONDI GRPC] 🔍 发现CPU单位问题:");

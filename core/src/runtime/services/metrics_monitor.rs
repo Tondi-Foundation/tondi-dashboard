@@ -324,6 +324,24 @@ impl MetricsService {
             println!("  - snapshot.node_disk_io_read_bytes = {}", process_metrics.disk_io_read_bytes as f64);
             println!("  - snapshot.node_disk_io_read_per_sec = {}", process_metrics.disk_io_read_per_sec as f64);
             
+            // 特别检查磁盘I/O指标
+            if process_metrics.disk_io_read_per_sec == 0.0 {
+                println!("[METRICS] ⚠️  磁盘读取速度为0 - 可能的原因:");
+                println!("  1. tondi节点确实没有磁盘读取活动");
+                println!("  2. tondi节点版本不支持磁盘I/O监控");
+                println!("  3. 操作系统限制进程级别的磁盘I/O统计");
+                println!("  4. 需要特殊权限才能获取磁盘I/O信息");
+                println!("  💡 建议: 尝试在tondi节点上进行一些文件操作来触发磁盘读取");
+            } else {
+                println!("[METRICS] ✅ 磁盘读取速度正常: {} bytes/sec", process_metrics.disk_io_read_per_sec);
+            }
+            
+            if process_metrics.disk_io_read_bytes == 0 {
+                println!("[METRICS] ⚠️  磁盘读取总字节数为0 - 可能从未进行过磁盘读取");
+            } else {
+                println!("[METRICS] ✅ 磁盘读取总字节数: {} bytes", process_metrics.disk_io_read_bytes);
+            }
+            
             // 特别检查CPU值是否太小
             if process_metrics.cpu_usage < 1.0 && process_metrics.cpu_usage > 0.0 {
                 println!("[METRICS] ⚠️  CPU使用率很小: {}% - 可能会被格式化为0", process_metrics.cpu_usage);
@@ -335,6 +353,12 @@ impl MetricsService {
             }
         } else {
             println!("[METRICS] 警告: 没有process_metrics数据!");
+            println!("  这解释了为什么磁盘I/O指标为0 - 根本获取不到数据!");
+            println!("  可能的原因:");
+            println!("    1. tondi节点没有启用process metrics收集");
+            println!("    2. tondi节点版本不支持process metrics");
+            println!("    3. gRPC服务配置问题");
+            println!("    4. 需要重新编译tondi节点以支持process metrics");
         }
         
         // 添加consensus metrics调试信息

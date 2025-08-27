@@ -4702,7 +4702,8 @@
       "{arrowsDownUpIcon} Transfer": "{arrowsDownUpIcon} Transfer",
       "{qrCodeIcon} Request": "{qrCodeIcon} Request",
       "~2 hours": "~2 hours",
-      "~30 minutes": "~30 minutes"
+      "~30 minutes": "~30 minutes",
+      "余额将通过钱包事件自动更新": "余额将通过钱包事件自动更新"
     },
     "es": {
       "'Phishing hint' is a secret word or a phrase that is displayed when you open your wallet. If you do not see the hint when opening your wallet, you may be accessing a fake wallet designed to steal your funds. If this occurs, stop using the wallet immediately, check the browser URL domain name and seek help on social networks (Kaspa Discord or Telegram).": "'Pista de phishing' es una palabra o frase secretas que se muestran cuando abres tu billetera. Si no ves esta pista cuando abras tu billetera, puedes estar accediendo a una billetera falsa destinada a robarte los fondos. Si te pasa esto, no utilices la billetera, revisa la URL en el navegador y busca ayuda en las redes sociales (Discord o Telegram oficiales de Kaspa).",
