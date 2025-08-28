@@ -537,6 +537,60 @@ impl TondiService {
                 println!("[START ALL SERVICES DEBUG] 所有服务 RPC API 附加完成");
 
                 println!("[START ALL SERVICES DEBUG] ✅ 钱包服务启动完成");
+                
+                // 桌面版本：在这里添加同步状态检查
+                println!("[START ALL SERVICES DEBUG] 🖥️ 桌面版本：开始检查同步状态...");
+                if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
+                    println!("[START ALL SERVICES DEBUG] ✅ 桌面版本：成功获取gRPC客户端");
+                    println!("[START ALL SERVICES DEBUG] 🔍 桌面版本：开始调用GetServerInfo API...");
+                    
+                    // 调用GetServerInfo API获取节点的详细信息
+                    match rpc_api.get_server_info().await {
+                        Ok(server_info) => {
+                            println!("[START ALL SERVICES DEBUG] 🚀 桌面版本 - GetServerInfo API 调用成功！");
+                            println!("[START ALL SERVICES DEBUG] 📊 节点详细信息:");
+                            println!("[START ALL SERVICES DEBUG]   - 同步状态: {}", server_info.is_synced);
+                            println!("[START ALL SERVICES DEBUG]   - 服务器版本: {}", server_info.server_version);
+                            println!("[START ALL SERVICES DEBUG]   - 网络ID: {:?}", server_info.network_id);
+                            println!("[START ALL SERVICES DEBUG]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
+                            println!("[START ALL SERVICES DEBUG]   - 有UTXO索引: {}", server_info.has_utxo_index);
+                            println!("[START ALL SERVICES DEBUG]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
+                            
+                            // 发送ServerStatus事件
+                            let network_id = network.into();
+                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
+                            
+                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                is_synced: server_info.is_synced,
+                                network_id,
+                                url: Some(url),
+                                server_version: server_info.server_version,
+                            })
+                            .unwrap();
+                            
+                            println!("[START ALL SERVICES DEBUG] ✅ 桌面版本ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
+                        }
+                        Err(e) => {
+                            println!("[START ALL SERVICES DEBUG] ❌ 桌面版本GetServerInfo API调用失败: {}", e);
+                            println!("[START ALL SERVICES DEBUG] ⚠️ 使用默认同步状态: false");
+                            
+                            let network_id = network.into();
+                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
+                            
+                            // 使用默认值
+                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                is_synced: false,
+                                network_id,
+                                url: Some(url),
+                                server_version: "gRPC (default)".to_string(),
+                            })
+                            .unwrap();
+                        }
+                    }
+                } else {
+                    println!("[START ALL SERVICES DEBUG] ❌ 桌面版本：无法获取gRPC客户端");
+                }
+                
                 // 启动余额监控服务，与 kaspa-ng 的架构对齐
                 println!("[START ALL SERVICES DEBUG] 准备启动余额监控服务");
                 let wallet_clone = wallet.clone();
@@ -1049,13 +1103,16 @@ impl Service for TondiService {
     }
 
     async fn spawn(self: Arc<Self>) -> Result<()> {
+        println!("[TONDI SERVICE] 🚀 spawn方法开始执行");
         let _application_events_sender = self.application_events.sender.clone();
 
         // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
 
         let status = if runtime::is_chrome_extension() {
+            println!("[TONDI SERVICE] 🌐 Chrome扩展模式");
             self.wallet().get_status(Some("tondi-dashboard")).await.ok()
         } else {
+            println!("[TONDI SERVICE] 🖥️ 桌面模式");
             None
         };
 
@@ -1287,16 +1344,79 @@ impl Service for TondiService {
                 }
             }
         } else {
+            // 桌面版本：简化同步状态检查
+            println!("[TONDI SERVICE] 🖥️ 桌面版本，简化同步状态检查...");
+            
+            // 立即尝试获取同步状态，不等待
+            if let Some(wallet) = self.core_wallet() {
+                println!("[TONDI SERVICE] ✅ 桌面版本：成功获取钱包实例");
+                
+                if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
+                    println!("[TONDI SERVICE] ✅ 桌面版本：成功获取gRPC客户端");
+                    println!("[TONDI SERVICE] 🔍 桌面版本：开始调用GetServerInfo API...");
+                    
+                    // 调用GetServerInfo API获取节点的详细信息
+                    match rpc_api.get_server_info().await {
+                        Ok(server_info) => {
+                            println!("[TONDI SERVICE] 🚀 桌面版本 - GetServerInfo API 调用成功！");
+                            println!("[TONDI SERVICE] 📊 节点详细信息:");
+                            println!("[TONDI SERVICE]   - 同步状态: {}", server_info.is_synced);
+                            println!("[TONDI SERVICE]   - 服务器版本: {}", server_info.server_version);
+                            println!("[TONDI SERVICE]   - 网络ID: {:?}", server_info.network_id);
+                            println!("[TONDI SERVICE]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
+                            println!("[TONDI SERVICE]   - 有UTXO索引: {}", server_info.has_utxo_index);
+                            println!("[TONDI SERVICE]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
+                            
+                            // 发送ServerStatus事件
+                            let network_id = self.network().into();
+                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
+                            
+                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                is_synced: server_info.is_synced,
+                                network_id,
+                                url: Some(url),
+                                server_version: server_info.server_version,
+                            })
+                            .unwrap();
+                            
+                            println!("[TONDI SERVICE] ✅ 桌面版本ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
+                        }
+                        Err(e) => {
+                            println!("[TONDI SERVICE] ❌ 桌面版本GetServerInfo API调用失败: {}", e);
+                            println!("[TONDI SERVICE] ⚠️ 使用默认同步状态: false");
+                            
+                            let network_id = self.network().into();
+                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
+                            
+                            // 使用默认值
+                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                is_synced: false,
+                                network_id,
+                                url: Some(url),
+                                server_version: "gRPC (default)".to_string(),
+                            })
+                            .unwrap();
+                        }
+                    }
+                } else {
+                    println!("[TONDI SERVICE] ❌ 桌面版本：无法获取gRPC客户端");
+                }
+            } else {
+                println!("[TONDI SERVICE] ❌ 桌面版本：无法获取钱包实例");
+            }
+            
+            println!("[TONDI SERVICE] 🖥️ 桌面版本：同步状态检查完成，开始主循环");
+            
             loop {
                 select! {
                     // msg = wallet_events.recv().fuse() => {
                     // // msg = wallet.multiplexer().channel().recv().fuse() => {
                     //     if let Ok(event) = msg {
                     //         self.handle_multiplexer(event).await?;
-                    //     } else {
+                    //         } else {
                     //         break;
+                    //         }
                     //     }
-                    // }
 
                     msg = self.as_ref().service_events.receiver.recv().fuse() => {
                         if let Ok(event) = msg {
