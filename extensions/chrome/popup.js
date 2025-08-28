@@ -40,4 +40,4 @@ import init from '/tondi-dashboard.js';
 })();
 
 
-// wasm_bindgen('/tondi-ng_bg.wasm');
+// wasm_bindgen('/tondi-dashboard_bg.wasm');

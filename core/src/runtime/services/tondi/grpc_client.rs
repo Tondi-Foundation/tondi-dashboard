@@ -511,17 +511,91 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            // println!("[TONDI GRPC] Using real gRPC client to get sync status");
+            println!("[TONDI GRPC] 正在获取节点同步状态...");
             
-            // Call the real gRPC client
-            match grpc_client.get_sync_status_call(None, request).await {
-                Ok(response) => {
-                    println!("[TONDI GRPC] Successfully got sync status from remote node: {:?}", response);
+            // 首先尝试获取服务器信息来检查同步状态
+            match grpc_client.get_server_info_call(None, tondi_rpc_core::GetServerInfoRequest {}).await {
+                Ok(server_info) => {
+                    println!("[TONDI GRPC] ✅ 成功获取服务器信息: {:?}", server_info);
+                    // 从服务器信息中提取同步状态
+                    let is_synced = server_info.is_synced;
+                    println!("[TONDI GRPC] 节点同步状态: {}", is_synced);
+                    
+                    // 构造GetSyncStatusResponse
+                    let response = tondi_rpc_core::GetSyncStatusResponse {
+                        is_synced,
+                    };
                     Ok(response)
                 }
                 Err(e) => {
-                    println!("[TONDI GRPC] Failed to get sync status from remote node: {}", e);
-                    Err(tondi_rpc_core::RpcError::General(format!("Failed to get sync status from remote node: {}", e)))
+                    println!("[TONDI GRPC] ⚠️ 无法获取服务器信息，尝试直接获取同步状态: {}", e);
+                    
+                    // 如果获取服务器信息失败，尝试直接获取同步状态
+                    match grpc_client.get_sync_status_call(None, request).await {
+                        Ok(response) => {
+                            println!("[TONDI GRPC] ✅ 成功获取同步状态: {:?}", response);
+                            Ok(response)
+                        }
+                        Err(e2) => {
+                            println!("[TONDI GRPC] ❌ 获取同步状态失败: {}", e2);
+                            // 如果两种方法都失败，返回默认值（未同步）
+                            println!("[TONDI GRPC] 返回默认同步状态: false");
+                            let response = tondi_rpc_core::GetSyncStatusResponse {
+                                is_synced: false,
+                            };
+                            Ok(response)
+                        }
+                    }
+                }
+            }
+        } else {
+            Err(tondi_rpc_core::RpcError::General("No gRPC client available".to_string()))
+        }
+    }
+
+    /// 获取同步状态（简化版本，直接返回bool）
+    async fn get_sync_status(&self) -> RpcResult<bool> {
+        // Ensure connection before making the call
+        if !self.is_connected() {
+            if let Err(e) = self.ensure_connected().await {
+                return Err(tondi_rpc_core::RpcError::General(format!("Not connected: {}", e)));
+            }
+        }
+
+        let grpc_client = {
+            let client_guard = self.grpc_client.lock().unwrap();
+            client_guard.clone()
+        };
+        
+        if let Some(grpc_client) = grpc_client {
+            println!("[TONDI GRPC] 正在获取节点同步状态（简化版本）...");
+            
+            // 首先尝试获取服务器信息来检查同步状态
+            match grpc_client.get_server_info_call(None, tondi_rpc_core::GetServerInfoRequest {}).await {
+                Ok(server_info) => {
+                    println!("[TONDI GRPC] ✅ 成功获取服务器信息: {:?}", server_info);
+                    // 从服务器信息中提取同步状态
+                    let is_synced = server_info.is_synced;
+                    println!("[TONDI GRPC] 节点同步状态: {}", is_synced);
+                    Ok(is_synced)
+                }
+                Err(e) => {
+                    println!("[TONDI GRPC] ⚠️ 无法获取服务器信息，尝试直接获取同步状态: {}", e);
+                    
+                    // 如果获取服务器信息失败，尝试直接获取同步状态
+                    let request = tondi_rpc_core::GetSyncStatusRequest {};
+                    match grpc_client.get_sync_status_call(None, request).await {
+                        Ok(response) => {
+                            println!("[TONDI GRPC] ✅ 成功获取同步状态: {:?}", response);
+                            Ok(response.is_synced)
+                        }
+                        Err(e2) => {
+                            println!("[TONDI GRPC] ❌ 获取同步状态失败: {}", e2);
+                            // 如果两种方法都失败，返回默认值（未同步）
+                            println!("[TONDI GRPC] 返回默认同步状态: false");
+                            Ok(false)
+                        }
+                    }
                 }
             }
         } else {

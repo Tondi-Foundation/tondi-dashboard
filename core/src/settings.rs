@@ -757,7 +757,7 @@ impl Default for Settings {
 impl Settings {}
 
 fn storage() -> Result<Storage> {
-    Ok(Storage::try_new("tondi-ng.settings")?)
+    Ok(Storage::try_new("tondi-dashboard.settings")?)
 }
 
 impl Settings {

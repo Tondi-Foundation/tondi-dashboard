@@ -63,7 +63,7 @@ async fn attempt_version_check(url: &str, current_version: &str, timeout_seconds
     let timeout_duration = Duration::from_secs(timeout_seconds);
     let request_future = async {
         Request::new(url)
-            .with_user_agent(format!("tondi-ng {current_version} software update check"))
+            .with_user_agent(format!("tondi-dashboard {current_version} software update check"))
             .get_json::<serde_json::Value>()
             .await
     };

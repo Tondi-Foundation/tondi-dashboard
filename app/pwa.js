@@ -1,9 +1,9 @@
-var cacheName = 'tondi-ng';
+var cacheName = 'tondi-dashboard';
 var filesToCache = [
   './',
   './index.html',
-  './tondi-ng.js',
-  './tondi-ng_bg.wasm',
+  './tondi-dashboard.js',
+  './tondi-dashboard_bg.wasm',
 ];
 
 /* Start the service worker and cache all of the app's content */

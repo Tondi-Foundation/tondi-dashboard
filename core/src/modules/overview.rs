@@ -255,7 +255,7 @@ impl Overview {
 
                         ui.hyperlink_to_tab(
                             format!("• {CLOUD} {}",i18n("Tondi Dashboard online")),
-                            "https://tondi-ng.org"
+                            "https://tondi-dashboard.org"
                         );
                     });
 
@@ -339,7 +339,7 @@ impl Overview {
 
                         ui.hyperlink_to_tab(
                             format!("• {}",i18n("Tondi Dashboard on GitHub")),
-                            "https://github.com/aspectron/tondi-ng"
+                            "https://github.com/aspectron/tondi-dashboard"
                         );
                         ui.hyperlink_to_tab(
                             format!("• {}",i18n("Tondi Client on GitHub")),

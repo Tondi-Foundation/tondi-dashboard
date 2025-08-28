@@ -43,7 +43,7 @@ pub fn i18n_storage_folder() -> Result<PathBuf> {
                 Ok(local)
             } else {
                 // fallback to the default storage folder, which is the
-                // same as tondi-ng settings storage folder: `~/.tondi-ng/`
+                // same as tondi-dashboard settings storage folder: `~/.tondi-dashboard/`
                 let default_storage_folder =
                     tondi_wallet_core::storage::local::default_storage_folder();
                 let storage_folder = workflow_store::fs::resolve_path(default_storage_folder)?;
@@ -83,14 +83,14 @@ pub fn i18n_storage_file() -> Result<PathBuf> {
                 Ok(local)
             } else {
                 // fallback to the default storage folder, which is the
-                // same as tondi-ng settings storage folder: `~/.tondi-ng/`
+                // same as tondi-dashboard settings storage folder: `~/.tondi-dashboard/`
                 let default_storage_folder =
                     tondi_wallet_core::storage::local::default_storage_folder();
                 let storage_folder = workflow_store::fs::resolve_path(default_storage_folder)?;
                 if !storage_folder.exists() {
                     std::fs::create_dir_all(&storage_folder)?;
                 }
-                Ok(storage_folder.join("tondi-ng.i18n.json"))
+                Ok(storage_folder.join("tondi-dashboard.i18n.json"))
             }
         }
     }

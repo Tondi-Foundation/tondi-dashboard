@@ -347,7 +347,7 @@ impl Server {
         format!("handle_port_event: got msg: {msg_jsv:?}").into()
     }
 
-    // Handle message from tondi-ng-core (client)
+    // Handle message from tondi-dashboard-core (client)
     fn register_listener(self: &Arc<Self>) {
         let this = self.clone();
 

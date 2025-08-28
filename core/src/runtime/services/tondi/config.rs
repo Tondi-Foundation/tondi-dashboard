@@ -7,13 +7,13 @@ use tondi_core::tondid_env;
 pub use tondid_lib::args::Args;
 
 fn user_agent_comment() -> String {
-    format!("tondi-ng:{}-{}", VERSION, GIT_DESCRIBE)
+    format!("tondi-dashboard:{}-{}", VERSION, GIT_DESCRIBE)
 }
 
 #[allow(dead_code)]
 fn user_agent() -> String {
     format!(
-        "/{}:{}/tondi-ng:{}-{}/",
+        "/{}:{}/tondi-dashboard:{}-{}/",
         tondid_env::name(),
         tondid_env::version(),
         VERSION,

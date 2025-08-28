@@ -450,7 +450,7 @@ where
 }
 
 /// Gracefully halt the runtime runtime. This is used
-/// to shutdown tondid when the tondi-ng process exit
+/// to shutdown tondid when the tondi-dashboard process exit
 /// is an inevitable eventuality.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn halt() {
@@ -493,7 +493,7 @@ pub fn halt() {
 
 /// Attempt to halt the runtime runtime but exit the process
 /// if it takes too long. This is used in attempt to shutdown
-/// tondid if the tondi-ng process panics, which can result
+/// tondid if the tondi-dashboard process panics, which can result
 /// in a still functioning zombie child process on unix systems.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn abort() {

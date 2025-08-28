@@ -11,6 +11,7 @@ use tondi_wrpc_client::Resolver;
 use workflow_core::runtime;
 use std::time::Duration;
 
+
 const ENABLE_PREEMPTIVE_DISCONNECT: bool = true;
 
 cfg_if! {
@@ -1053,64 +1054,89 @@ impl Service for TondiService {
         // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
 
         let status = if runtime::is_chrome_extension() {
-            self.wallet().get_status(Some("tondi-ng")).await.ok()
+            self.wallet().get_status(Some("tondi-dashboard")).await.ok()
         } else {
             None
         };
 
         if let Some(status) = status {
-            let GetStatusResponse {
-                is_connected,
-                is_open: _,
-                is_synced,
-                url,
-                is_wrpc_client: _,
-                network_id,
-                context,
-                selected_account_id,
-                wallet_descriptor,
-                account_descriptors,
-            } = status;
+                            let GetStatusResponse {
+                    is_connected,
+                    is_open: _,
+                    is_synced: _,
+                    url,
+                    is_wrpc_client: _,
+                    network_id,
+                    context,
+                    selected_account_id,
+                    wallet_descriptor,
+                    account_descriptors,
+                } = status;
             
             println!("[TONDI SERVICE DEBUG] GetStatusResponse: is_connected={}, url={:?}, network_id={:?}", is_connected, url, network_id);
 
             if let Some(context) = context {
                 let _context = Context::try_from_slice(&context)?;
 
-                if is_connected {
-                    let network_id = network_id.unwrap_or_else(|| self.network().into());
-                    
-                    println!("[TONDI SERVICE DEBUG] GetStatusResponse.is_connected=true, 发送 CoreWallet::Connect 事件");
-                    println!("[TONDI SERVICE DEBUG] Connect 事件参数: network_id={:?}, url={:?}", network_id, url);
+                                    if is_connected {
+                        let network_id = network_id.unwrap_or_else(|| self.network().into());
+                        
+                        println!("[TONDI SERVICE DEBUG] GetStatusResponse.is_connected=true, 发送 CoreWallet::Connect 事件");
+                        println!("[TONDI SERVICE DEBUG] Connect 事件参数: network_id={:?}, url={:?}", network_id, url);
 
-                    self.core_wallet_notify(CoreWalletEvents::Connect {
-                        network_id,
-                        url: url.clone(),
-                    })
-                    .unwrap();
+                        self.core_wallet_notify(CoreWalletEvents::Connect {
+                            network_id,
+                            url: url.clone(),
+                        })
+                        .unwrap();
 
-                    // ^ TODO - Get appropriate `server_version`
-                    let server_version = Default::default();
-                    // let event = Box::new(CoreWalletEvents::ServerStatus {
-                    //     is_synced,
-                    //     network_id,
-                    //     url,
-                    //     server_version,
-                    // });
-                    // self.application_events
-                    //     .sender
-                    //     .try_send(crate::events::Events::Wallet { event })
-                    //     // .await
-                    //     .unwrap();
-
-                    self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                        is_synced,
-                        network_id,
-                        url,
-                        server_version,
-                    })
-                    .unwrap();
-                }
+                        // 获取真实的同步状态并发送ServerStatus事件
+                        if let Some(wallet) = self.core_wallet() {
+                            if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
+                                match rpc_api.get_sync_status().await {
+                                    Ok(is_synced) => {
+                                        println!("[TONDI SERVICE] 获取到真实同步状态: {}", is_synced);
+                                        self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                            is_synced,
+                                            network_id,
+                                            url,
+                                            server_version: "gRPC".to_string(),
+                                        })
+                                        .unwrap();
+                                    }
+                                    Err(e) => {
+                                        println!("[TONDI SERVICE] 获取同步状态失败: {}", e);
+                                        // 使用默认值
+                                        self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                            is_synced: false,
+                                            network_id,
+                                            url,
+                                            server_version: "gRPC".to_string(),
+                                        })
+                                        .unwrap();
+                                    }
+                                }
+                            } else {
+                                // 如果无法获取gRPC客户端，使用默认值
+                                self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                    is_synced: false,
+                                    network_id,
+                                    url,
+                                    server_version: "gRPC".to_string(),
+                                })
+                                .unwrap();
+                            }
+                        } else {
+                            // 如果无法获取钱包，使用默认值
+                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                                is_synced: false,
+                                network_id,
+                                url,
+                                server_version: "gRPC".to_string(),
+                            })
+                            .unwrap();
+                        }
+                    }
 
                 if let (Some(wallet_descriptor), Some(account_descriptors)) =
                     (wallet_descriptor, account_descriptors)
@@ -1202,7 +1228,7 @@ impl Service for TondiService {
                 // new instance - setup new context
                 let context = Context {};
                 self.wallet()
-                    .retain_context("tondi-ng", Some(borsh::to_vec(&context)?))
+                    .retain_context("tondi-dashboard", Some(borsh::to_vec(&context)?))
                     .await?;
             }
         } else {
@@ -1220,6 +1246,7 @@ impl Service for TondiService {
             // wallet.multiplexer().channel()
             let wallet_events = wallet.multiplexer().channel();
 
+            println!("[TONDI SERVICE] 开始主事件循环");
             loop {
                 select! {
                     msg = wallet_events.recv().fuse() => {
