@@ -1137,7 +1137,7 @@ impl RpcApi for TondiGrpcClient {
         }
     }
 
-    async fn get_header_call(&self, _connection: Option<&tondi_rpc_core::api::connection::DynRpcConnection>, request: tondi_rpc_core::GetHeaderRequest) -> RpcResult<tondi_rpc_core::GetHeaderResponse> {
+    async fn get_header_call(&self, _connection: Option<&tondi_rpc_core::api::connection::DynRpcConnection>, request: GetHeaderRequest) -> RpcResult<GetHeaderResponse> {
         // Ensure connection before making the call
         if !self.is_connected() {
             if let Err(e) = self.ensure_connected().await {

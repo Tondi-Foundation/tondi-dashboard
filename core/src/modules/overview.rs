@@ -266,8 +266,8 @@ impl Overview {
                             .show(ui, |ui| {
                                 CollapsingHeader::new(i18n("Resources"))
                                     .default_open(true)
-                                    .show(ui, |ui| {
-                                        use egui_phosphor::light::{CHART_SCATTER,DATABASE};
+                                    .show(ui, |_ui| {
+                                        // Removed unused imports: CHART_SCATTER, DATABASE
                 
                                         // ui.hyperlink_to_tab(
                                         //     format!("• {DATABASE} {}",i18n("Explorer")),
@@ -275,6 +275,8 @@ impl Overview {
                                         // );
                                         // ui.hyperlink_to_tab(
                                         //     format!("• {CHART_SCATTER} {}",i18n("Statistics")),
+                                        //     "https://kas.fyi",
+                                        // );
                                         //     "https://kas.fyi",
                                         // );
                                         // ui.hyperlink_to_tab(
