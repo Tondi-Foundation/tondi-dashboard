@@ -1059,6 +1059,7 @@ impl Service for TondiService {
             None
         };
 
+        // 为桌面版本也添加同步状态检查
         if let Some(status) = status {
                             let GetStatusResponse {
                     is_connected,
@@ -1090,49 +1091,64 @@ impl Service for TondiService {
                         })
                         .unwrap();
 
-                        // 获取真实的同步状态并发送ServerStatus事件
+                        // 初始连接时获取一次节点状态，然后依赖事件驱动
                         if let Some(wallet) = self.core_wallet() {
                             if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
-                                match rpc_api.get_sync_status().await {
-                                    Ok(is_synced) => {
-                                        println!("[TONDI SERVICE] 获取到真实同步状态: {}", is_synced);
+                                // 只在初始连接时调用一次GetServerInfo API
+                                match rpc_api.get_server_info().await {
+                                    Ok(server_info) => {
+                                        println!("[TONDI SERVICE] 🚀 初始连接 - GetServerInfo API 调用成功！");
+                                        println!("[TONDI SERVICE] 📊 节点初始状态:");
+                                        println!("[TONDI SERVICE]   - 同步状态: {}", server_info.is_synced);
+                                        println!("[TONDI SERVICE]   - 服务器版本: {}", server_info.server_version);
+                                        println!("[TONDI SERVICE]   - 网络ID: {:?}", server_info.network_id);
+                                        println!("[TONDI SERVICE]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
+                                        println!("[TONDI SERVICE]   - 有UTXO索引: {}", server_info.has_utxo_index);
+                                        println!("[TONDI SERVICE]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
+                                        
+                                        // 发送初始ServerStatus事件
                                         self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                            is_synced,
+                                            is_synced: server_info.is_synced,
                                             network_id,
                                             url,
-                                            server_version: "gRPC".to_string(),
+                                            server_version: server_info.server_version,
                                         })
                                         .unwrap();
+                                        
+                                        println!("[TONDI SERVICE] ✅ 初始ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
+                                        println!("[TONDI SERVICE] 🔄 后续同步状态更新将依赖节点推送的事件...");
                                     }
                                     Err(e) => {
-                                        println!("[TONDI SERVICE] 获取同步状态失败: {}", e);
-                                        // 使用默认值
+                                        println!("[TONDI SERVICE] ❌ 初始GetServerInfo API调用失败: {}", e);
+                                        println!("[TONDI SERVICE] ⚠️ 使用默认初始状态，等待节点事件推送");
+                                        
+                                        // 使用默认值，等待节点推送事件
                                         self.core_wallet_notify(CoreWalletEvents::ServerStatus {
                                             is_synced: false,
                                             network_id,
                                             url,
-                                            server_version: "gRPC".to_string(),
+                                            server_version: "gRPC (waiting for events)".to_string(),
                                         })
                                         .unwrap();
                                     }
                                 }
                             } else {
-                                // 如果无法获取gRPC客户端，使用默认值
+                                println!("[TONDI SERVICE] ⚠️ 无法获取gRPC客户端，使用默认状态");
                                 self.core_wallet_notify(CoreWalletEvents::ServerStatus {
                                     is_synced: false,
                                     network_id,
                                     url,
-                                    server_version: "gRPC".to_string(),
+                                    server_version: "gRPC (no client)".to_string(),
                                 })
                                 .unwrap();
                             }
                         } else {
-                            // 如果无法获取钱包，使用默认值
+                            println!("[TONDI SERVICE] ⚠️ 无法获取钱包实例，使用默认状态");
                             self.core_wallet_notify(CoreWalletEvents::ServerStatus {
                                 is_synced: false,
                                 network_id,
                                 url,
-                                server_version: "gRPC".to_string(),
+                                server_version: "gRPC (no wallet)".to_string(),
                             })
                             .unwrap();
                         }
