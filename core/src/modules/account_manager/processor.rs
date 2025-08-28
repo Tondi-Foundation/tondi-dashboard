@@ -44,23 +44,23 @@ impl<'context> Processor<'context> {
 
                     let account_id = account.id();
 
-                    let priority_fee_sompi = self.context.priority_fees_sompi;
-                    let send_amount_sompi = self.context.send_amount_sompi;
+                    let priority_fee_sau = self.context.priority_fees_sau;
+                    let send_amount_sau = self.context.send_amount_sau;
 
                     let status = self.context.estimate.clone();
                     spawn(async move {
 
-                        let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sompi, priority_fee_sompi).await;
+                        let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sau, priority_fee_sau).await;
 
                         let payment_output = PaymentOutput {
                             address,
-                            amount: send_amount_sompi,
+                            amount: send_amount_sau,
                         };
     
                         let actual_request = AccountsEstimateRequest {
                             account_id,
                             destination: payment_output.into(),
-                            priority_fee_sompi: Fees::SenderPays(fee_rate as u64),
+                            priority_fee_sau: Fees::SenderPays(fee_rate as u64),
                             payload: None,
                         };
 
@@ -92,7 +92,7 @@ impl<'context> Processor<'context> {
                         unreachable!("expecting only one of destination address or transfer to account");
                     }
 
-                    let priority_fee_sompi = self.context.priority_fees_sompi;
+                    let priority_fee_sau = self.context.priority_fees_sau;
 
                     // ---
 
@@ -104,22 +104,22 @@ impl<'context> Processor<'context> {
 
                             let address = Address::try_from(self.context.destination_address_string.as_str()).expect("invalid address");
                             let account_id = account.id();
-                            let send_amount_sompi = self.context.send_amount_sompi;
+                            let send_amount_sau = self.context.send_amount_sau;
                             let payment_output = PaymentOutput {
                                 address,
-                                amount: send_amount_sompi,
+                                amount: send_amount_sau,
                             };
         
                             spawn_with_result(&send_result, async move {
 
-                                let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sompi, priority_fee_sompi).await;
+                                let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sau, priority_fee_sau).await;
 
                                 let request = AccountsSendRequest {
                                     account_id,
                                     destination: payment_output.into(),
                                     wallet_secret,
                                     payment_secret,
-                                    priority_fee_sompi: Fees::SenderPays(fee_rate as u64),
+                                    priority_fee_sau: Fees::SenderPays(fee_rate as u64),
                                     payload: None,
                                 };
         
@@ -133,18 +133,18 @@ impl<'context> Processor<'context> {
                         TransactionKind::Transfer => {
                             let destination_account_id = self.context.transfer_to_account.as_ref().expect("transfer destination account").id();
                             let source_account_id = account.id();
-                            let transfer_amount_sompi = self.context.send_amount_sompi;
+                            let transfer_amount_sau = self.context.send_amount_sau;
 
                             spawn_with_result(&send_result, async move {
-                                let fee_rate = calculate_fee_rate(network_type, source_account_id, transfer_amount_sompi, priority_fee_sompi).await;
+                                let fee_rate = calculate_fee_rate(network_type, source_account_id, transfer_amount_sau, priority_fee_sau).await;
 
                                 let request = AccountsTransferRequest {
                                     source_account_id,
                                     destination_account_id,
                                     wallet_secret,
                                     payment_secret,
-                                    priority_fee_sompi: Some(Fees::SenderPays(fee_rate as u64)),
-                                    transfer_amount_sompi,
+                                    priority_fee_sau: Some(Fees::SenderPays(fee_rate as u64)),
+                                    transfer_amount_sau,
                                 };
         
                                 let generator_summary = runtime().wallet().accounts_transfer_call(request).await?.generator_summary;
@@ -184,7 +184,7 @@ impl<'context> Processor<'context> {
     }
 }
 
-async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, send_amount_sompi : u64, priority_fee_sompi : u64) -> f64 {
+async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, send_amount_sau : u64, priority_fee_sau : u64) -> f64 {
 
     let address = match network_type {
         NetworkType::Testnet => Address::try_from("tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhqrxplya").unwrap(),
@@ -195,14 +195,14 @@ async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, 
 
     let payment_output = PaymentOutput {
         address,
-        amount: send_amount_sompi,
+        amount: send_amount_sau,
     };
 
 
     let base_request = AccountsEstimateRequest {
         account_id,
         destination: payment_output.clone().into(),
-        priority_fee_sompi: Fees::SenderPays(0),
+        priority_fee_sau: Fees::SenderPays(0),
         payload: None,
     };
 
@@ -213,7 +213,7 @@ async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, 
     if base_mass == 0 {
         1.0
     } else {
-        // (priority_fee_sompi as f64 / base_mass as f64) + 1.0
-        priority_fee_sompi as f64 / base_mass as f64
+        // (priority_fee_sau as f64 / base_mass as f64) + 1.0
+        priority_fee_sau as f64 / base_mass as f64
     }
 }

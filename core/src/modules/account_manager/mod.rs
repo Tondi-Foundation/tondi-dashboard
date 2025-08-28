@@ -169,10 +169,10 @@ pub struct ManagerContext {
     transfer_to_account : Option<Account>,
     destination_address_string : String,
     send_amount_text: String,
-    send_amount_sompi : u64,
+    send_amount_sau : u64,
     enable_priority_fees : bool,
     priority_fees_text : String,
-    priority_fees_sompi : u64,
+    priority_fees_sau : u64,
     // priority_fee_rate : f64,
     estimate : Arc<Mutex<EstimatorStatus>>,
     request_estimate : Option<bool>,
@@ -206,10 +206,10 @@ impl Zeroize for ManagerContext {
         self.transfer_to_account = None;
         self.destination_address_string = String::default();
         self.send_amount_text = String::default();
-        self.send_amount_sompi = 0;
+        self.send_amount_sau = 0;
         self.enable_priority_fees = false;
         self.priority_fees_text = String::default();
-        self.priority_fees_sompi = 0;
+        self.priority_fees_sau = 0;
         // self.priority_fee_rate = 0.0;
         *self.estimate.lock().unwrap() = EstimatorStatus::None;
         self.address_status = AddressStatus::None;

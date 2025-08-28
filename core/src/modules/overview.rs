@@ -269,14 +269,14 @@ impl Overview {
                                     .show(ui, |ui| {
                                         use egui_phosphor::light::{CHART_SCATTER,DATABASE};
                 
-                                        ui.hyperlink_to_tab(
-                                            format!("• {DATABASE} {}",i18n("Explorer")),
-                                            "https://explorer.tondi.org/",
-                                        );
-                                        ui.hyperlink_to_tab(
-                                            format!("• {CHART_SCATTER} {}",i18n("Statistics")),
-                                            "https://kas.fyi",
-                                        );
+                                        // ui.hyperlink_to_tab(
+                                        //     format!("• {DATABASE} {}",i18n("Explorer")),
+                                        //     "https://explorer.tondi.org/",
+                                        // );
+                                        // ui.hyperlink_to_tab(
+                                        //     format!("• {CHART_SCATTER} {}",i18n("Statistics")),
+                                        //     "https://kas.fyi",
+                                        // );
                                         // ui.hyperlink_to_tab(
                                         //     format!("• {DISCORD_LOGO} {}",i18n("Discord")),
                                         //     "https://discord.com/invite/kS3SK5F36R",
@@ -486,18 +486,18 @@ impl Overview {
             } else {
                 (fees.low.value().feerate, fees.economic.value().feerate, fees.priority.value().feerate)
             };
-            let low_kas = sompi_to_tondi_string_with_suffix((low * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
-            let med_kas = sompi_to_tondi_string_with_suffix((med * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
-            let high_kas = sompi_to_tondi_string_with_suffix((high * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
+            let low_tondi = sau_to_tondi_string_with_suffix((low * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
+            let med_tondi = sau_to_tondi_string_with_suffix((med * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
+            let high_tondi = sau_to_tondi_string_with_suffix((high * BASIC_TRANSACTION_MASS as f64) as u64, &core.settings.node.network.into());
             CollapsingHeader::new(i18n("Fee Market"))
                 .default_open(true)
                 .show(ui, |ui| {
-                //  ui.label(format!("Low: {} SOMPI/g;  ~{}/tx", format_with_precision(low), low_kas));
-                //  ui.label(format!("Economic: {} SOMPI/g;  ~{}/tx", format_with_precision(med),med_kas));
-                //  ui.label(format!("Priority: {} SOMPI/g;  ~{}/tx", format_with_precision(high),high_kas));
-                    ui.label(i18n_args("Low: {low} SOMPI/g;  ~{low_kas}/tx", &[("low", format_with_precision(low)), ("low_kas", low_kas)]));
-                    ui.label(i18n_args("Economic: {med} SOMPI/g;  ~{med_kas}/tx", &[("med", format_with_precision(med)), ("med_kas", med_kas)]));
-                    ui.label(i18n_args("Priority: {high} SOMPI/g;  ~{high_kas}/tx", &[("high", format_with_precision(high)), ("high_kas", high_kas)]));
+                //  ui.label(format!("Low: {} SAU/g;  ~{}/tx", format_with_precision(low), low_tondi));
+                //  ui.label(format!("Economic: {} SAU/g;  ~{}/tx", format_with_precision(med),med_tondi));
+                //  ui.label(format!("Priority: {} SAU/g;  ~{}/tx", format_with_precision(high),high_tondi));
+                    ui.label(i18n_args("Low: {low} SAU/g;  ~{low_tondi}/tx", &[("low", format_with_precision(low)), ("low_tondi", low_tondi)]));
+                    ui.label(i18n_args("Economic: {med} SAU/g;  ~{med_tondi}/tx", &[("med", format_with_precision(med)), ("med_tondi", med_tondi)]));
+                    ui.label(i18n_args("Priority: {high} SAU/g;  ~{high_tondi}/tx", &[("high", format_with_precision(high)), ("high_tondi", high_tondi)]));
                 });
         }
     }

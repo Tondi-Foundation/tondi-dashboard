@@ -296,7 +296,21 @@ impl TondiService {
     }
 
     pub fn core_wallet(&self) -> Option<Arc<CoreWallet>> {
-        self.wallet.clone().downcast_arc::<CoreWallet>().ok()
+        println!("[CORE WALLET DEBUG] core_wallet() 被调用");
+        println!("[CORE WALLET DEBUG] self.wallet 类型: {:?}", std::any::type_name_of_val(&*self.wallet));
+        
+        // 尝试 downcast
+        let downcast_result = self.wallet.clone().downcast_arc::<CoreWallet>();
+        match &downcast_result {
+            Ok(core_wallet) => {
+                println!("[CORE WALLET DEBUG] ✅ downcast 成功，返回 CoreWallet");
+                Some(core_wallet.clone())
+            }
+            Err(e) => {
+                println!("[CORE WALLET DEBUG] ❌ downcast 失败: {:?}", e);
+                None
+            }
+        }
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -460,208 +474,222 @@ impl TondiService {
         rpc: Option<Rpc>,
         network: Network,
     ) -> Result<()> {
-        self.services_start_instant
-            .lock()
-            .unwrap()
-            .replace(Instant::now());
+        println!("[START ALL SERVICES DEBUG] start_all_services 被调用");
+        println!("[START ALL SERVICES DEBUG] rpc 参数: {:?}", rpc.is_some());
+        println!("[START ALL SERVICES DEBUG] network: {:?}", network);
 
+        // 设置网络
         *self.network.lock().unwrap() = network;
+        println!("[START ALL SERVICES DEBUG] 网络已设置: {:?}", network);
 
-        if let (Some(rpc), Some(wallet)) = (rpc, self.core_wallet()) {
-            let rpc_api = rpc.rpc_api().clone();
+        // 简化模式匹配，与kaspa-ng保持一致
+        if let Some(rpc) = rpc {
+            if let Some(wallet) = self.core_wallet() {
+                println!("[START ALL SERVICES DEBUG] ✅ 使用提供的 RPC 和钱包");
+                
+                // 获取RPC API
+                let rpc_api = rpc.rpc_api().clone();
+                println!("[START ALL SERVICES DEBUG] RPC API 获取成功");
 
-            wallet
-                .set_network_id(&network.into())
-                .expect("Can not change network id while the wallet is connected");
+                // 设置网络ID
+                println!("[START ALL SERVICES DEBUG] 开始设置网络 ID...");
+                match wallet.set_network_id(&network.into()) {
+                    Ok(_) => println!("[START ALL SERVICES DEBUG] 网络 ID 设置完成"),
+                    Err(e) => {
+                        println!("[START ALL SERVICES DEBUG] ❌ 网络 ID 设置失败: {:?}", e);
+                        return Err(e.into());
+                    }
+                }
 
-            wallet.bind_rpc(Some(rpc)).await.unwrap();
-            wallet
-                .start()
-                .await
-                .expect("Unable to start wallet service");
+                // 绑定RPC
+                println!("[START ALL SERVICES DEBUG] 开始绑定 RPC...");
+                match wallet.bind_rpc(Some(rpc.clone())).await {
+                    Ok(_) => println!("[START ALL SERVICES DEBUG] RPC 绑定完成"),
+                    Err(e) => {
+                        println!("[START ALL SERVICES DEBUG] ❌ RPC 绑定失败: {:?}", e);
+                        return Err(e.into());
+                    }
+                }
 
-            for service in crate::runtime::runtime().services().into_iter() {
-                service.attach_rpc(&rpc_api).await?;
-            }
+                // 启动钱包服务
+                println!("[START ALL SERVICES DEBUG] 开始启动钱包服务...");
+                match wallet.start().await {
+                    Ok(_) => println!("[START ALL SERVICES DEBUG] 钱包服务启动完成"),
+                    Err(e) => {
+                        println!("[START ALL SERVICES DEBUG] ❌ 钱包服务启动失败: {:?}", e);
+                        return Err(e.into());
+                    }
+                }
 
-            Ok(())
-        } else {
-            // 如果没有提供RPC，尝试使用gRPC配置创建客户端
-            cfg_if! {
-                if #[cfg(not(target_arch = "wasm32"))] {
-                    // 桌面版本：尝试使用gRPC配置
-                    let default_net_config = NetworkInterfaceConfig::default();
-                    println!("[CALL SITE 481 DEBUG] NetworkInterfaceConfig::default(): {:?}", default_net_config);
-                    let grpc_config = RpcConfig::Grpc {
-                        url: Some(default_net_config),
-                    };
-                                            println!("[CALL SITE 481] 调用 create_rpc_client");
-                        match Self::create_rpc_client(&grpc_config, network).await {
-                            Ok(grpc_rpc) => {
-                                let rpc_api = grpc_rpc.rpc_api().clone();
-                                
-                                // 绑定gRPC客户端到钱包
-                                if let Some(wallet) = self.core_wallet() {
-                                    println!("[TONDI SERVICE DEBUG] 开始绑定gRPC客户端到钱包");
-                                    wallet.bind_rpc(Some(grpc_rpc.clone())).await.unwrap();
-                                    println!("[TONDI SERVICE DEBUG] gRPC客户端已成功绑定到钱包");
+                // 为所有服务附加RPC API
+                println!("[START ALL SERVICES DEBUG] 开始为所有服务附加 RPC API...");
+                for service in crate::runtime::runtime().services().into_iter() {
+                    let service_name = service.name().to_string();
+                    match service.attach_rpc(&rpc_api).await {
+                        Ok(_) => println!("[START ALL SERVICES DEBUG] 服务 {} RPC API 附加成功", service_name),
+                        Err(e) => {
+                            println!("[START ALL SERVICES DEBUG] ❌ 服务 {} RPC API 附加失败: {:?}", service_name, e);
+                            return Err(e);
+                        }
+                    }
+                }
+                println!("[START ALL SERVICES DEBUG] 所有服务 RPC API 附加完成");
+
+                println!("[START ALL SERVICES DEBUG] ✅ 钱包服务启动完成");
+                // 启动余额监控服务，与 kaspa-ng 的架构对齐
+                println!("[START ALL SERVICES DEBUG] 准备启动余额监控服务");
+                let wallet_clone = wallet.clone();
+                let rpc_clone = rpc.clone();
+                let service_self = self.clone();
+                
+                println!("[START ALL SERVICES DEBUG] 克隆完成，开始 spawn 余额监控服务");
+                tokio::spawn(async move {
+                    println!("[BALANCE MONITOR] 🚀 余额监控服务已启动！");
+                    println!("[BALANCE MONITOR] 等待钱包完全启动...");
+                    
+                    // 增加等待时间，确保钱包完全启动
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    println!("[BALANCE MONITOR] 等待完成，开始查询余额");
+                    
+                    // 重试机制：多次尝试查询账户
+                    let mut retry_count = 0;
+                    let max_retries = 10;
+                    
+                    while retry_count < max_retries {
+                        println!("[BALANCE MONITOR] 尝试 {} / {}: 查询钱包状态", retry_count + 1, max_retries);
+                        
+                        if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
+                            println!("[BALANCE MONITOR] ✅ 钱包状态查询成功");
+                            
+                            if let Some(accounts) = status.account_descriptors {
+                                if !accounts.is_empty() {
+                                    println!("[BALANCE MONITOR] 🎉 找到 {} 个账户！", accounts.len());
                                     
-                                    // 设置gRPC客户端的事件发送器，用于触发余额更新事件
-                                    if let Some(_grpc_client) = grpc_rpc.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
-                                        // Removed event_sender setup - using passive event listening like kaspa-ng
-                                        println!("[TONDI SERVICE DEBUG] Using gRPC client with passive event listening");
-                                    }
-                                    
-                                    println!("[TONDI SERVICE DEBUG] Starting wallet service");
-                                    wallet
-                                        .start()
-                                        .await
-                                        .expect("Unable to start wallet service");
-                                    println!("[TONDI SERVICE DEBUG] 钱包服务已启动");
-                                    
-                                    // 启动后获取账户信息，余额将通过钱包核心自动更新
-                                    println!("[TONDI SERVICE DEBUG] 获取账户信息");
-                                    if let Some(_grpc_client) = grpc_rpc.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
-                                        // 获取钱包状态以获取账户信息
-                                        match wallet.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
-                                            Ok(status_response) => {
-                                                if let Some(account_descriptors) = status_response.account_descriptors {
-                                                    println!("[TONDI SERVICE DEBUG] 找到 {} 个账户", account_descriptors.len());
-                                                    
-                                                    // 钱包核心没有自动余额更新机制，需要实现余额监控服务
-                                                    println!("[TONDI SERVICE DEBUG] 启动余额监控服务（钱包核心无自动更新）");
-                                                    let wallet_clone = wallet.clone();
-                                                    let grpc_client_clone = grpc_rpc.clone();
-                                                    let service_self = self.clone();
-                                                    
-                                                    tokio::spawn(async move {
-                                                        // 等待钱包完全启动
-                                                        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                                                        
-                                                        // 立即查询一次余额
-                                                        if let Some(grpc_client) = grpc_client_clone.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
-                                                            if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
-                                                                if let Some(accounts) = status.account_descriptors {
-                                                                    for account in accounts {
-                                                                        if let Some(receive_address) = account.receive_address() {
-                                                                            // 查询余额
-                                                                            let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
-                                                                                tondi_rpc_core::RpcAddress::from(receive_address.clone())
-                                                                            );
-                                                                            
-                                                                            match grpc_client.get_balance_by_address_call(None, balance_request).await {
-                                                                                Ok(balance_response) => {
-                                                                                    // 创建 Balance 对象
-                                                                                    let balance = tondi_wallet_core::prelude::Balance::new(
-                                                                                        balance_response.balance, // mature
-                                                                                        0,                       // pending
-                                                                                        0,                       // outgoing
-                                                                                        0,                       // mature_utxo_count
-                                                                                        0,                       // pending_utxo_count
-                                                                                        0,                       // stasis_utxo_count
-                                                                                    );
-                                                                                    
-                                                                                    // 发送余额更新事件
-                                                                                    let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
-                                                                                        balance: Some(balance),
-                                                                                        id: account.account_id.clone().into(),
-                                                                                    });
-                                                                                    
-                                                                                    println!("[TONDI SERVICE DEBUG] 账户 {} 余额更新: {} sompi", 
-                                                                                        account.name_or_id(), balance_response.balance);
-                                                                                }
-                                                                                Err(e) => {
-                                                                                    println!("[TONDI SERVICE DEBUG] 账户 {} 余额查询失败: {}", 
-                                                                                        account.name_or_id(), e);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        
-                                                        // 每60秒更新一次余额（模拟 kaspa-ng 的自动更新）
-                                                        loop {
-                                                            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-                                                            
-                                                            if let Some(grpc_client) = grpc_client_clone.as_any().downcast_ref::<crate::runtime::services::tondi::grpc_client::TondiGrpcClient>() {
-                                                                if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
-                                                                    if let Some(accounts) = status.account_descriptors {
-                                                                        for account in accounts {
-                                                                            if let Some(receive_address) = account.receive_address() {
-                                                                                let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
-                                                                                    tondi_rpc_core::RpcAddress::from(receive_address.clone())
-                                                                                );
-                                                                                
-                                                                                if let Ok(balance_response) = grpc_client.get_balance_by_address_call(None, balance_request).await {
-                                                                                    let balance = tondi_wallet_core::prelude::Balance::new(
-                                                                                        balance_response.balance, 0, 0, 0, 0, 0
-                                                                                    );
-                                                                                    
-                                                                                    let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
-                                                                                        balance: Some(balance),
-                                                                                        id: account.account_id.clone().into(),
-                                                                                    });
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    });
-                                                } else {
-                                                    println!("[TONDI SERVICE DEBUG] 没有找到账户描述符");
-                                                }
-                                            }
-                                            Err(e) => {
-                                                println!("[TONDI SERVICE DEBUG] 获取钱包状态失败: {}", e);
+                                    for account in accounts {
+                                        if let Some(receive_address) = account.receive_address() {
+                                            println!("[BALANCE MONITOR] 查询账户 {} 的余额", account.name_or_id());
+                                            
+                                            // 查询余额
+                                            let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
+                                                tondi_rpc_core::RpcAddress::from(receive_address.clone())
+                                            );
+                                            
+                                            // 使用 RPC API 查询余额
+                                            if let Ok(balance_response) = rpc_clone.rpc_api().get_balance_by_address_call(None, balance_request).await {
+                                                // 创建 Balance 对象
+                                                let balance = tondi_wallet_core::prelude::Balance::new(
+                                                    balance_response.balance, // mature
+                                                    0,                       // pending
+                                                    0,                       // outgoing
+                                                    0,                       // mature_utxo_count
+                                                    0,                       // pending_utxo_count
+                                                    0,                       // stasis_utxo_count
+                                                );
+                                                
+                                                // 发送余额更新事件
+                                                let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
+                                                    balance: Some(balance),
+                                                    id: account.account_id.clone().into(),
+                                                });
+                                                
+                                                println!("[BALANCE MONITOR] 🎉 账户 {} 余额更新成功: {} sau", 
+                                                    account.name_or_id(), balance_response.balance);
+                                            } else {
+                                                println!("[BALANCE MONITOR] ❌ 账户 {} 余额查询失败", account.name_or_id());
                                             }
                                         }
                                     }
+                                    
+                                    // 找到账户后，跳出重试循环
+                                    break;
                                 } else {
-                                    println!("[TONDI SERVICE DEBUG] 错误：core_wallet() 返回 None");
+                                    println!("[BALANCE MONITOR] ⚠️ 账户列表为空，等待账户加载...");
                                 }
-
-                                // 为所有服务附加gRPC API
-                                for service in crate::runtime::runtime().services().into_iter() {
-                                    service.attach_rpc(&rpc_api).await?;
-                                }
-                                
-                                // 余额更新将通过钱包核心自动处理，无需手动监控
-                                println!("[TONDI SERVICE DEBUG] 钱包服务已启动，余额将自动更新");
-                                
-                                Ok(())
+                            } else {
+                                println!("[BALANCE MONITOR] ⚠️ 没有找到账户描述符，等待账户加载...");
                             }
-                        Err(_) => {
-                            // gRPC失败，回退到默认连接
-                            self.wallet()
-                                .connect_call(ConnectRequest {
-                                    url: None,
-                                    network_id: network.into(),
-                                    retry_on_error: true,
-                                    block_async_connect: false,
-                                    require_sync: false,
-                                })
-                                .await?;
-                            Ok(())
+                        } else {
+                            println!("[BALANCE MONITOR] ❌ 钱包状态查询失败，重试中...");
+                        }
+                        
+                        retry_count += 1;
+                        if retry_count < max_retries {
+                            println!("[BALANCE MONITOR] 等待 3 秒后重试...");
+                            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                         }
                     }
-                } else {
-                    // Web版本：使用默认连接
-                    self.wallet()
-                        .connect_call(ConnectRequest {
-                            url: None,
-                            network_id: network.into(),
-                            retry_on_error: true,
-                            block_async_connect: false,
-                            require_sync: false,
-                        })
-                        .await?;
-                    Ok(())
-                }
+                    
+                    if retry_count >= max_retries {
+                        println!("[BALANCE MONITOR] ⚠️ 达到最大重试次数，账户可能还没有创建或加载");
+                    }
+                    
+                    println!("[BALANCE MONITOR] 进入定期余额更新循环（每60秒）");
+                    // 每60秒更新一次余额（模拟 kaspa-ng 的自动更新）
+                    loop {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+                        println!("[BALANCE MONITOR] 🔄 执行定期余额更新");
+                        
+                        if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
+                            if let Some(accounts) = status.account_descriptors {
+                                for account in accounts {
+                                    if let Some(receive_address) = account.receive_address() {
+                                        let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
+                                            tondi_rpc_core::RpcAddress::from(receive_address.clone())
+                                        );
+                                        
+                                        if let Ok(balance_response) = rpc_clone.rpc_api().get_balance_by_address_call(None, balance_request).await {
+                                            let balance = tondi_wallet_core::prelude::Balance::new(
+                                                balance_response.balance, 0, 0, 0, 0, 0
+                                            );
+                                            
+                                            let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
+                                                balance: Some(balance),
+                                                id: account.account_id.clone().into(),
+                                            });
+                                            
+                                            println!("[BALANCE MONITOR] ✅ 账户 {} 定期余额更新: {} sau", 
+                                                account.name_or_id(), balance_response.balance);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                Ok(())
+            } else {
+                println!("[START ALL SERVICES DEBUG] ⚠️ core_wallet() 返回 None");
+                println!("[START ALL SERVICES DEBUG] 使用默认连接");
+                
+                // 使用默认连接，与 kaspa-ng 保持一致
+                self.wallet()
+                    .connect_call(ConnectRequest {
+                        url: None,
+                        network_id: network.into(),
+                        retry_on_error: true,
+                        block_async_connect: false,
+                        require_sync: false,
+                    })
+                    .await?;
+
+                Ok(())
             }
+        } else {
+            println!("[START ALL SERVICES DEBUG] ⚠️ 没有提供 RPC");
+            println!("[START ALL SERVICES DEBUG] 使用默认连接");
+            
+            // 使用默认连接，与 kaspa-ng 保持一致
+            self.wallet()
+                .connect_call(ConnectRequest {
+                    url: None,
+                    network_id: network.into(),
+                    retry_on_error: true,
+                    block_async_connect: false,
+                    require_sync: false,
+                })
+                .await?;
+
+            Ok(())
         }
     }
 

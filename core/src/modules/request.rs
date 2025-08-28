@@ -6,15 +6,15 @@ pub use xxhash_rust::xxh3::xxh3_64;
 
 pub struct RequestUri {
     pub address : String,
-    pub amount_sompi : Option<u64>,
+    pub amount_sau : Option<u64>,
     pub label : Option<String>,
 }
 
 impl std::fmt::Display for RequestUri {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut uri = self.address.clone();
-        if let Some(amount_sompi) = self.amount_sompi {
-            uri = format!("{}?amount={}", uri, sompi_to_tondi(amount_sompi));
+        if let Some(amount_sau) = self.amount_sau {
+            uri = format!("{}?amount={}", uri, sau_to_tondi(amount_sau));
         }
         if let Some(label) = self.label.as_ref() {
             uri = format!("{}?label={}", uri, label);
@@ -29,7 +29,7 @@ pub struct Request {
     account : Option<Account>,
     qr : HashMap<String, (String,load::Bytes)>,
     amount : String,
-    amount_sompi : Option<u64>,
+    amount_sau : Option<u64>,
     label : String,
     error : Option<String>,
 }
@@ -41,17 +41,17 @@ impl Request {
             account : None,
             qr : Default::default(),
             amount : String::default(),
-            amount_sompi : None,
+            amount_sau : None,
             label : String::default(),
             error : None,
         }
     }
 
-    fn create_request_uri(&self, address : impl Into<String>, amount_sompi : Option<u64>, label : Option<impl Into<String>>) -> RequestUri {
+    fn create_request_uri(&self, address : impl Into<String>, amount_sau : Option<u64>, label : Option<impl Into<String>>) -> RequestUri {
 
         RequestUri {
             address : address.into(),
-            amount_sompi,
+            amount_sau,
             label : label.map(|l|l.into()),
         }
     }
@@ -171,7 +171,7 @@ impl ModuleT for Request {
                 if let Some(account) = this.account.as_ref() {
                     let address = account.receive_address().to_string();
                     let label = this.label.is_not_empty().then_some(this.label.clone());
-                    let request_uri = this.create_request_uri(address.clone(), this.amount_sompi, label);
+                    let request_uri = this.create_request_uri(address.clone(), this.amount_sau, label);
 
                     this.render_destination(ui, address.as_str(), &request_uri);
                 }
@@ -188,17 +188,17 @@ impl ModuleT for Request {
                 );
 
                 if amount != this.amount {
-                    match try_tondi_str_to_sompi(this.amount.as_str()) {
-                        Ok(Some(amount_sompi)) => {
-                            this.amount_sompi = Some(amount_sompi);
+                    match try_tondi_str_to_sau(this.amount.as_str()) {
+                        Ok(Some(amount_sau)) => {
+                            this.amount_sau = Some(amount_sau);
                             this.error = None;
                         },
                         Ok(None) => {
-                            this.amount_sompi = None;
+                            this.amount_sau = None;
                             this.error = None;
                         },
                         Err(_err) => {
-                            this.amount_sompi = None;
+                            this.amount_sau = None;
                             this.error = Some(i18n("Please enter a valid amount of KAS").to_string());
                         },
                     }

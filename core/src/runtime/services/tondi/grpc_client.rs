@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tondi_rpc_core::{
     GetMetricsResponse,
     GetServerInfoResponse, GetConnectedPeerInfoResponse, GetBlockCountResponse, GetBlockDagInfoResponse,
+    GetHeaderRequest, GetHeaderResponse,
     RpcResult,
 };
 use tondi_rpc_core::api::rpc::RpcApi;
@@ -116,7 +117,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get server info");
+            // println!("[TONDI GRPC] Using real gRPC client to get server info");
             
             // Call the real gRPC client
             match grpc_client.get_server_info_call(None, tondi_rpc_core::GetServerInfoRequest {}).await {
@@ -148,7 +149,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get connected peer info");
+            // println!("[TONDI GRPC] Using real gRPC client to get connected peer info");
             
             // Call the real gRPC client
             match grpc_client.get_connected_peer_info_call(None, tondi_rpc_core::GetConnectedPeerInfoRequest {}).await {
@@ -180,7 +181,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block count");
+            // println!("[TONDI GRPC] Using real gRPC client to get block count");
             
             // Create GetBlockCountRequest
             let request = tondi_rpc_core::GetBlockCountRequest {};
@@ -215,7 +216,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block DAG info");
+            // println!("[TONDI GRPC] Using real gRPC client to get block DAG info");
             
             // Create GetBlockDagInfoRequest
             let request = tondi_rpc_core::GetBlockDagInfoRequest {};
@@ -256,7 +257,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            // println!("[TONDI GRPC] Using real gRPC client to get metrics");
+            // // println!("[TONDI GRPC] Using real gRPC client to get metrics");
             
             // Create GetMetricsRequest
             let request = tondi_rpc_core::GetMetricsRequest {
@@ -381,7 +382,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get system info");
+            // println!("[TONDI GRPC] Using real gRPC client to get system info");
             
             // Call the real gRPC client
             match grpc_client.get_system_info_call(None, request).await {
@@ -413,7 +414,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get connections");
+            // println!("[TONDI GRPC] Using real gRPC client to get connections");
             
             // Call the real gRPC client
             match grpc_client.get_connections_call(None, request).await {
@@ -446,7 +447,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            // println!("[TONDI GRPC] Using real gRPC client to get metrics");
+            // // println!("[TONDI GRPC] Using real gRPC client to get metrics");
             
             // Call the real gRPC client
             match grpc_client.get_metrics_call(None, request).await {
@@ -478,7 +479,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get server info");
+            // println!("[TONDI GRPC] Using real gRPC client to get server info");
             
             // Call the real gRPC client
             match grpc_client.get_server_info_call(None, request).await {
@@ -510,7 +511,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get sync status");
+            // println!("[TONDI GRPC] Using real gRPC client to get sync status");
             
             // Call the real gRPC client
             match grpc_client.get_sync_status_call(None, request).await {
@@ -542,7 +543,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get current network");
+            // println!("[TONDI GRPC] Using real gRPC client to get current network");
             
             // Call the real gRPC client
             match grpc_client.get_current_network_call(None, request).await {
@@ -606,7 +607,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block template");
+            // println!("[TONDI GRPC] Using real gRPC client to get block template");
             
             // Call the real gRPC client
             match grpc_client.get_block_template_call(None, request).await {
@@ -638,7 +639,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get peer addresses");
+            // println!("[TONDI GRPC] Using real gRPC client to get peer addresses");
             
             // Call the real gRPC client
             match grpc_client.get_peer_addresses_call(None, request).await {
@@ -670,7 +671,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get sink");
+            // println!("[TONDI GRPC] Using real gRPC client to get sink");
             
             // Call the real gRPC client
             match grpc_client.get_sink_call(None, request).await {
@@ -702,7 +703,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get mempool entry");
+            // println!("[TONDI GRPC] Using real gRPC client to get mempool entry");
             
             // Call the real gRPC client
             match grpc_client.get_mempool_entry_call(None, request).await {
@@ -734,7 +735,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get mempool entries");
+            // println!("[TONDI GRPC] Using real gRPC client to get mempool entries");
             
             // Call the real gRPC client
             match grpc_client.get_mempool_entries_call(None, request).await {
@@ -766,7 +767,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get connected peer info");
+            // println!("[TONDI GRPC] Using real gRPC client to get connected peer info");
             
             // Call the real gRPC client
             match grpc_client.get_connected_peer_info_call(None, request).await {
@@ -894,7 +895,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block");
+            // println!("[TONDI GRPC] Using real gRPC client to get block");
             
             // Call the real gRPC client
             match grpc_client.get_block_call(None, request).await {
@@ -926,7 +927,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get subnetwork");
+            // println!("[TONDI GRPC] Using real gRPC client to get subnetwork");
             
             // Call the real gRPC client
             match grpc_client.get_subnetwork_call(None, request).await {
@@ -958,7 +959,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get virtual chain from block");
+            // println!("[TONDI GRPC] Using real gRPC client to get virtual chain from block");
             
             // Call the real gRPC client
             match grpc_client.get_virtual_chain_from_block_call(None, request).await {
@@ -990,7 +991,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get blocks");
+            // println!("[TONDI GRPC] Using real gRPC client to get blocks");
             
             // Call the real gRPC client
             match grpc_client.get_blocks_call(None, request).await {
@@ -1022,7 +1023,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block count");
+            // println!("[TONDI GRPC] Using real gRPC client to get block count");
             
             // Call the real gRPC client
             match grpc_client.get_block_count_call(None, request).await {
@@ -1054,7 +1055,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get block DAG info");
+            // println!("[TONDI GRPC] Using real gRPC client to get block DAG info");
             
             // Call the real gRPC client
             match grpc_client.get_block_dag_info_call(None, request).await {
@@ -1136,6 +1137,38 @@ impl RpcApi for TondiGrpcClient {
         }
     }
 
+    async fn get_header_call(&self, _connection: Option<&tondi_rpc_core::api::connection::DynRpcConnection>, request: tondi_rpc_core::GetHeaderRequest) -> RpcResult<tondi_rpc_core::GetHeaderResponse> {
+        // Ensure connection before making the call
+        if !self.is_connected() {
+            if let Err(e) = self.ensure_connected().await {
+                return Err(tondi_rpc_core::RpcError::General(format!("Not connected: {}", e)));
+            }
+        }
+
+        let grpc_client = {
+            let client_guard = self.grpc_client.lock().unwrap();
+            client_guard.clone()
+        };
+        
+        if let Some(grpc_client) = grpc_client {
+            // println!("[TONDI GRPC] Using real gRPC client to get header");
+            
+            // Call the real gRPC client
+            match grpc_client.get_header_call(None, request).await {
+                Ok(response) => {
+                    println!("[TONDI GRPC] Successfully got header from remote node: {:?}", response);
+                    Ok(response)
+                }
+                Err(e) => {
+                    println!("[TONDI GRPC] Failed to get header from remote node: {}", e);
+                    Err(tondi_rpc_core::RpcError::General(format!("Failed to get header from remote node: {}", e)))
+                }
+            }
+        } else {
+            Err(tondi_rpc_core::RpcError::General("No gRPC client available".to_string()))
+        }
+    }
+
     async fn get_headers_call(&self, _connection: Option<&tondi_rpc_core::api::connection::DynRpcConnection>, request: tondi_rpc_core::GetHeadersRequest) -> RpcResult<tondi_rpc_core::GetHeadersResponse> {
         // Ensure connection before making the call
         if !self.is_connected() {
@@ -1150,7 +1183,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get headers");
+            // println!("[TONDI GRPC] Using real gRPC client to get headers");
             
             // Call the real gRPC client
             match grpc_client.get_headers_call(None, request).await {
@@ -1182,7 +1215,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get balance by address");
+            // println!("[TONDI GRPC] Using real gRPC client to get balance by address");
             
             // Call the real gRPC client and return response directly - no event triggering
             match grpc_client.get_balance_by_address_call(None, request).await {
@@ -1214,7 +1247,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get balances by addresses");
+            // println!("[TONDI GRPC] Using real gRPC client to get balances by addresses");
             
             // Call the real gRPC client
             match grpc_client.get_balances_by_addresses_call(None, request).await {
@@ -1246,7 +1279,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get UTXOs by addresses");
+            // println!("[TONDI GRPC] Using real gRPC client to get UTXOs by addresses");
             
             // Call the real gRPC client
             match grpc_client.get_utxos_by_addresses_call(None, request).await {
@@ -1278,7 +1311,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get sink blue score");
+            // println!("[TONDI GRPC] Using real gRPC client to get sink blue score");
             
             // Call the real gRPC client
             match grpc_client.get_sink_blue_score_call(None, request).await {
@@ -1374,7 +1407,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get info");
+            // println!("[TONDI GRPC] Using real gRPC client to get info");
             
             // Call the real gRPC client
             match grpc_client.get_info_call(None, request).await {
@@ -1438,7 +1471,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get mempool entries by addresses");
+            // println!("[TONDI GRPC] Using real gRPC client to get mempool entries by addresses");
             
             // Call the real gRPC client
             match grpc_client.get_mempool_entries_by_addresses_call(None, request).await {
@@ -1470,7 +1503,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get coin supply");
+            // println!("[TONDI GRPC] Using real gRPC client to get coin supply");
             
             // Call the real gRPC client
             match grpc_client.get_coin_supply_call(None, request).await {
@@ -1502,7 +1535,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get DAA score timestamp estimate");
+            // println!("[TONDI GRPC] Using real gRPC client to get DAA score timestamp estimate");
             
             // Call the real gRPC client
             match grpc_client.get_daa_score_timestamp_estimate_call(None, request).await {
@@ -1534,7 +1567,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get UTXO return address");
+            // println!("[TONDI GRPC] Using real gRPC client to get UTXO return address");
             
             // Call the real gRPC client
             match grpc_client.get_utxo_return_address_call(None, request).await {
@@ -1566,12 +1599,12 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get fee estimate");
+            // // println!("[TONDI GRPC] Using real gRPC client to get fee estimate");
             
             // Call the real gRPC client
             match grpc_client.get_fee_estimate_call(None, request).await {
                 Ok(response) => {
-                    println!("[TONDI GRPC] Successfully got fee estimate from remote node: {:?}", response);
+                    // println!("[TONDI GRPC] Successfully got fee estimate from remote node: {:?}", response);
                     Ok(response)
                 }
                 Err(e) => {
@@ -1598,12 +1631,12 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get experimental fee estimate");
+            // println!("[TONDI GRPC] Using real gRPC client to get experimental fee estimate");
             
             // Call the real gRPC client
             match grpc_client.get_fee_estimate_experimental_call(None, request).await {
                 Ok(response) => {
-                    println!("[TONDI GRPC] Successfully got experimental fee estimate from remote node: {:?}", response);
+                    // println!("[TONDI GRPC] Successfully got experimental fee estimate from remote node: {:?}", response);
                     Ok(response)
                 }
                 Err(e) => {
@@ -1630,7 +1663,7 @@ impl RpcApi for TondiGrpcClient {
         };
         
         if let Some(grpc_client) = grpc_client {
-            println!("[TONDI GRPC] Using real gRPC client to get current block color");
+            // println!("[TONDI GRPC] Using real gRPC client to get current block color");
             
             // Call the real gRPC client
             match grpc_client.get_current_block_color_call(None, request).await {

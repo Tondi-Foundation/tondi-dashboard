@@ -247,7 +247,7 @@ impl DescribeAccount for AccountKind {
     fn describe(&self) -> (&'static str, &'static str) {
         match self.as_ref() {
             LEGACY_ACCOUNT_KIND => ("Legacy Account", "KDX, PWA (tondinet.io)"),
-            BIP32_ACCOUNT_KIND => ("Tondi Core BIP32", "tondiwallet, kaspium"),
+            BIP32_ACCOUNT_KIND => ("Tondi Core BIP32", "tondiwallet"),
             MULTISIG_ACCOUNT_KIND => ("Multi-Signature", ""),
             KEYPAIR_ACCOUNT_KIND => ("Keypair", "secp256k1"),
             _ => ("", ""),

@@ -148,7 +148,7 @@ impl<'context> Estimator<'context> {
         ui.add_space(8.);
         ui.heading(i18n("Priority Fee Estimator"));
 
-        let is_send_amount_zero = self.context.send_amount_sompi == 0;
+        let is_send_amount_zero = self.context.send_amount_sau == 0;
 
         let mut fee_selection = SelectionPanels::new(
             120.0,
@@ -159,9 +159,9 @@ impl<'context> Estimator<'context> {
             let feerate = bucket.feerate;
             let seconds = bucket.seconds.max(1.0) * number_of_generated_stages as f64;
             let seconds = if is_send_amount_zero || error.is_some() { "---".to_string() } else { format_duration_estimate_i18n(seconds) };
-            let total_kas = feerate * aggregate_mass as f64 * 1e-8;
-            let total_sompi = (feerate * aggregate_mass as f64) as u64;
-            let total_usd = usd_rate.map(|rate| total_kas * rate);
+            let total_tondi = feerate * aggregate_mass as f64 * 1e-8;
+            let total_sau = (feerate * aggregate_mass as f64) as u64;
+            let total_usd = usd_rate.map(|rate| total_tondi * rate);
             fee_selection = fee_selection.add_icon_less(mode, i18n(mode.to_string().as_str()), seconds, move |ui| {
                 // icon
                 let icon = if mode == fee_mode {
@@ -171,12 +171,12 @@ impl<'context> Estimator<'context> {
                 };
                 ui.label(icon);
                 
-                ui.label(RichText::new(sompi_to_tondi_string_with_suffix(total_sompi, &network_type)).strong());
+                ui.label(RichText::new(sau_to_tondi_string_with_suffix(total_sau, &network_type)).strong());
                 if let Some(usd) = total_usd {
                     let usd = format_currency(usd, 6);
                     ui.label(RichText::new(format!("~{} USD", usd)).strong());
                 }
-                ui.label(format!("{} SOMPI/g", format_with_precision(feerate)));
+                ui.label(format!("{} sau/g", format_with_precision(feerate)));
             });
         }
 
@@ -184,10 +184,10 @@ impl<'context> Estimator<'context> {
             let bucket = self.context.fee_mode.bucket();
             // let priority_feerate = (bucket.feerate - 1.0).max(0.0);
             // let priority_feerate = bucket.feerate;
-            // let total_fees_sompi = (priority_feerate * actual_estimate.aggregate_mass as f64) as u64;
-            let total_fees_sompi = (bucket.feerate * actual_estimate.aggregated_fees as f64) as u64;
+            // let total_fees_sau = (priority_feerate * actual_estimate.aggregate_mass as f64) as u64;
+            let total_fees_sau = (bucket.feerate * actual_estimate.aggregated_fees as f64) as u64;
             // runtime().toast(UserNotification::success(format!("selection: {:?}", self.context.fee_mode)).short());
-            let total_fee_tondi = sompi_to_tondi(total_fees_sompi);
+            let total_fee_tondi = sau_to_tondi(total_fees_sau);
             self.context.priority_fees_text = format!("{}", total_fee_tondi);
             self.context.fee_mode = FeeMode::None;
             request_estimate = true;
@@ -208,7 +208,7 @@ impl<'context> Estimator<'context> {
             if let Some(final_transaction_amount) = actual_estimate.final_transaction_amount {
                 ui.heading(RichText::new(
                     i18n_args("Final Amount: {amount}", 
-                        &[("amount",sompi_to_tondi_string_with_suffix(final_transaction_amount + actual_estimate.aggregated_fees, &network_type))]
+                        &[("amount",sau_to_tondi_string_with_suffix(final_transaction_amount + actual_estimate.aggregated_fees, &network_type))]
                     )).strong());
             }
 
@@ -217,7 +217,7 @@ impl<'context> Estimator<'context> {
         if let Some(error) = error {
             ui.label(error);
             ui.add_space(16.);
-        } else if !network_below_capacity && self.context.priority_fees_sompi == 0 && self.context.send_amount_sompi != 0 {
+        } else if !network_below_capacity && self.context.priority_fees_sau == 0 && self.context.send_amount_sau != 0 {
             ui.add_space(16.);
             ui.label(RichText::new(i18n("The network is currently congested.")));
             ui.label(RichText::new(i18n("Sending funds without priority fees will result in long transaction wait times.")));
@@ -267,9 +267,9 @@ impl<'context> Estimator<'context> {
     fn update_user_args(&mut self) -> bool {
         let mut valid = true;
 
-        match try_tondi_str_to_sompi(self.context.send_amount_text.as_str()) {
-            Ok(Some(sompi)) => {
-                self.context.send_amount_sompi = sompi;
+        match try_tondi_str_to_sau(self.context.send_amount_text.as_str()) {
+            Ok(Some(sau)) => {
+                self.context.send_amount_sau = sau;
             }
             Ok(None) => {
                 self.user_error(i18n("Please enter an amount").to_string());
@@ -281,12 +281,12 @@ impl<'context> Estimator<'context> {
             }
         }
 
-        match try_tondi_str_to_sompi(self.context.priority_fees_text.as_str()) {
-            Ok(Some(sompi)) => {
-                self.context.priority_fees_sompi = sompi;
+        match try_tondi_str_to_sau(self.context.priority_fees_text.as_str()) {
+            Ok(Some(sau)) => {
+                self.context.priority_fees_sau = sau;
             }
             Ok(None) => {
-                self.context.priority_fees_sompi = 0;
+                self.context.priority_fees_sau = 0;
             }
             Err(err) => {
                 self.user_error(format!("{} {err}", i18n("Invalid fee amount:")));

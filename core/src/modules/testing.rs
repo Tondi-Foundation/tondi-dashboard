@@ -122,42 +122,42 @@ impl ModuleT for Testing {
             .add_with_footer(FeeMode::LowPriority, i18n("Low-priority"), i18n("3 hours or more"), |ui|{
                 ui.label("12.88716 µKAS");
                 ui.label(RichText::new("~0.00000215 USD").strong());
-                ui.label("9 SOMPI/G");
+                ui.label("9 sau/G");
             })
             .add_with_footer(FeeMode::Economic, i18n("Economic"), i18n("~2 hours"), |ui|{
                 ui.label("15.83525 µKAS");
                 ui.label(RichText::new("~0.00000264 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::Normal, i18n("Normal"), i18n("~30 minutes"), |ui|{
                 ui.label("20.78334 µKAS");
                 ui.label(RichText::new("~0.00000347 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::LowPriority, i18n("Low-priority"), i18n("3 hours or more"), |ui|{
                 ui.label("12.88716 µKAS");
                 ui.label(RichText::new("~0.00000215 USD").strong());
-                ui.label("9 SOMPI/G");
+                ui.label("9 sau/G");
             })
             .add_with_footer(FeeMode::Economic, i18n("Economic"), i18n("~2 hours"), |ui|{
                 ui.label("15.83525 µKAS");
                 ui.label(RichText::new("~0.00000264 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::Normal, i18n("Normal"), i18n("~30 minutes"), |ui|{
                 ui.label("20.78334 µKAS");
                 ui.label(RichText::new("~0.00000347 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             });
             // .add_with_footer(FeeMode::Economic, i18n("Economic"), i18n("~2 hours"), |ui|{
             //     ui.label("13.83525 µKAS");
             //     ui.label(RichText::new("~608.83 USD").strong());
-            //     ui.label("10 SOMPI/G");
+            //     ui.label("10 sau/G");
             // })
             // .add_with_footer(FeeMode::Normal, i18n("Normal"), i18n("~30 minutes"), |ui|{
             //     ui.label("14.78334 µKAS");
             //     ui.label(RichText::new("~650.56 USD").strong());
-            //     ui.label("10 SOMPI/G");
+            //     ui.label("10 sau/G");
             // });
 
         
@@ -181,32 +181,32 @@ impl ModuleT for Testing {
             .add_with_footer(FeeMode::LowPriority, i18n("Low-priority"), i18n("3 hours or more"), |ui|{
                 ui.label("12.88716 µKAS");
                 ui.label(RichText::new("~0.00000215 USD").strong());
-                ui.label("9 SOMPI/G");
+                ui.label("9 sau/G");
             })
             .add_with_footer(FeeMode::Economic, i18n("Economic"), i18n("~2 hours"), |ui|{
                 ui.label("15.83525 µKAS");
                 ui.label(RichText::new("~0.00000264 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::Normal, i18n("Normal"), i18n("~30 minutes"), |ui|{
                 ui.label("20.78334 µKAS");
                 ui.label(RichText::new("~0.00000347 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::LowPriority, i18n("Low-priority"), i18n("3 hours or more"), |ui|{
                 ui.label("12.88716 µKAS");
                 ui.label(RichText::new("~0.00000215 USD").strong());
-                ui.label("9 SOMPI/G");
+                ui.label("9 sau/G");
             })
             .add_with_footer(FeeMode::Economic, i18n("Economic"), i18n("~2 hours"), |ui|{
                 ui.label("15.83525 µKAS");
                 ui.label(RichText::new("~0.00000264 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             })
             .add_with_footer(FeeMode::Normal, i18n("Normal"), i18n("~30 minutes"), |ui|{
                 ui.label("20.78334 µKAS");
                 ui.label(RichText::new("~0.00000347 USD").strong());
-                ui.label("10 SOMPI/G");
+                ui.label("10 sau/G");
             });
 
         if fee_selection.sep_ratio(0.7).render(ui, &mut self.fee_mode).clicked(){

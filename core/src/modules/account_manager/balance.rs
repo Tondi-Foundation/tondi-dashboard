@@ -22,13 +22,24 @@ impl<'context> BalancePane<'context> {
 
         if let Some(balance) = account.balance() {
             
+            // 添加同步状态日志
+            let sync_status = core.state().is_synced();
+            let manual_sync = core.state().is_synced;
+            let sync_state = core.state().sync_state();
+            println!("[BALANCE DISPLAY DEBUG] 同步状态检查:");
+            println!("[BALANCE DISPLAY DEBUG]   is_synced(): {}", sync_status);
+            println!("[BALANCE DISPLAY DEBUG]   manual_sync: {:?}", manual_sync);
+            println!("[BALANCE DISPLAY DEBUG]   sync_state: {:?}", sync_state);
+            
             if !core.state().is_synced() {
+                println!("[BALANCE DISPLAY DEBUG] ⚠️ 钱包未同步，显示同步中的余额");
                 ui.label(
                     s2kws_layout_job(core.balance_padding(), balance.mature, network_type, theme_color().balance_syncing_color,FontId::proportional(28.))
                 );
                 ui.label(RichText::new(i18n("The balance may be out of date during node sync")).size(12.).color(theme_color().balance_syncing_color));
                 return;
             } else {
+                println!("[BALANCE DISPLAY DEBUG] ✅ 钱包已同步，显示正常余额");
                 ui.label(
                     s2kws_layout_job(core.balance_padding(), balance.mature, network_type, theme_color().balance_color,FontId::proportional(28.))
                 );
@@ -45,7 +56,7 @@ impl<'context> BalancePane<'context> {
                                         let symbol = symbol.to_uppercase();
                                         let MarketData { price,  precision, .. } = data;
                                         // let text = 
-                                        let amount = sompi_to_tondi(balance.mature) * (*price);
+                                        let amount = sau_to_tondi(balance.mature) * (*price);
                                         format_currency_with_symbol(amount, *precision, symbol.as_str())
                                     })
                             }).collect::<Vec<_>>().join("  ");
@@ -58,7 +69,7 @@ impl<'context> BalancePane<'context> {
             if balance.pending != 0 {
                 ui.label(i18n_args(
                     "Pending: {amount}",
-                    &[("amount", &sompi_to_tondi_string_with_suffix(
+                    &[("amount", &sau_to_tondi_string_with_suffix(
                         balance.pending,
                         network_type
                     ))]
@@ -67,7 +78,7 @@ impl<'context> BalancePane<'context> {
             if balance.outgoing != 0 {
                 ui.label(i18n_args(
                     "Sending: {amount}",
-                    &[("amount", &sompi_to_tondi_string_with_suffix(
+                    &[("amount", &sau_to_tondi_string_with_suffix(
                         balance.outgoing,
                         network_type
                     ))]

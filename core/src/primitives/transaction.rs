@@ -142,11 +142,11 @@ impl Transaction {
         let Context { record, maturity } = &*self.context();
 
         let padding = 9 + largest
-            .map(|largest| sompi_to_tondi(largest).trunc().separated_string().len())
+            .map(|largest| sau_to_tondi(largest).trunc().separated_string().len())
             .unwrap_or_default();
 
-        let ps2k = |sompi| padded_sompi_to_tondi_string_with_suffix(sompi, &network_type, padding);
-        let s2k = |sompi| sompi_to_tondi_string_with_suffix(sompi, &network_type);
+        let ps2k = |sau| padded_sau_to_tondi_string_with_suffix(sau, &network_type, padding);
+        let s2k = |sau| sau_to_tondi_string_with_suffix(sau, &network_type);
 
         let timestamp = record
             .unixtime_as_locale_string()
@@ -369,14 +369,14 @@ impl Transaction {
                 } else {
                     ljb(&header)
                         .text("Sweep:", default_color)
-                        .text(&sompi_to_tondi_string(*aggregate_input_value), strong_color)
+                        .text(&sau_to_tondi_string(*aggregate_input_value), strong_color)
                         .text("Fees:", default_color)
                         .text(
-                            &sompi_to_tondi_string(*fees),
+                            &sau_to_tondi_string(*fees),
                             TransactionKind::Outgoing.as_color(),
                         )
                         .text("Change:", default_color)
-                        .text(&sompi_to_tondi_string(*change_value), strong_color)
+                        .text(&sau_to_tondi_string(*change_value), strong_color)
                 };
 
                 // ui.collapsable(&transaction_id, false, |ui,state| {
@@ -414,14 +414,14 @@ impl Transaction {
                 //         } else {
                 //             // LayoutJobBuilder::new(16.0, Some(font_id_header.clone()))
                 //             // .text("Sweep:", default_color)
-                //             // .text(&sompi_to_tondi_string(*aggregate_input_value), strong_color)
+                //             // .text(&sau_to_tondi_string(*aggregate_input_value), strong_color)
                 //             // .text("Fees:", default_color)
                 //             // .text(
-                //             //     &sompi_to_tondi_string(*fees),
+                //             //     &sau_to_tondi_string(*fees),
                 //             //     TransactionKind::Outgoing.as_color(),
                 //             // )
                 //             // .text("Change:", default_color)
-                //             // .text(&sompi_to_tondi_string(*change_value), strong_color)
+                //             // .text(&sau_to_tondi_string(*change_value), strong_color)
                 //         }
 
                 //         if !maturity.unwrap_or(true) {
@@ -602,13 +602,13 @@ impl Transaction {
                 collapsing_header.show(ui, |ui| {
                     ljb(&content)
                         .text("Sweep:", default_color)
-                        .text(&sompi_to_tondi_string(aggregate_input_value), strong_color)
+                        .text(&sau_to_tondi_string(aggregate_input_value), strong_color)
                         .label(ui);
 
                     ljb(&content)
                         .text("Fees:", default_color)
                         .text(
-                            &sompi_to_tondi_string(*fees),
+                            &sau_to_tondi_string(*fees),
                             TransactionKind::Outgoing.as_color(),
                         )
                         .label(ui);
@@ -620,22 +620,22 @@ impl Transaction {
 }
 
 #[inline]
-pub fn sompi_to_tondi(sompi: u64) -> f64 {
-    sompi as f64 / SOMPI_PER_TONDI as f64
+pub fn sau_to_tondi(sau: u64) -> f64 {
+    sau as f64 / SAU_PER_TONDI as f64
 }
 
 #[inline]
-pub fn tondi_to_sompi(tondi: f64) -> u64 {
-    (tondi * SOMPI_PER_TONDI as f64) as u64
+pub fn tondi_to_sau(tondi: f64) -> u64 {
+    (tondi * SAU_PER_TONDI as f64) as u64
 }
 
 #[inline]
-pub fn sompi_to_tondi_string(sompi: u64) -> String {
-    separated_float!(format!("{:.8}", sompi_to_tondi(sompi)))
+pub fn sau_to_tondi_string(sau: u64) -> String {
+    separated_float!(format!("{:.8}", sau_to_tondi(sau)))
 }
 #[inline]
-pub fn padded_sompi_to_tondi_string(sompi: u64, padding: usize) -> String {
-    separated_float!(format!("{:.8}", sompi_to_tondi(sompi)))
+pub fn padded_sau_to_tondi_string(sau: u64, padding: usize) -> String {
+    separated_float!(format!("{:.8}", sau_to_tondi(sau)))
         .pad_to_width_with_alignment(padding, Alignment::Right)
 }
 
@@ -649,21 +649,21 @@ pub fn tondi_suffix(network_type: &NetworkType) -> &'static str {
 }
 
 #[inline]
-pub fn sompi_to_tondi_string_with_suffix(sompi: u64, network_type: &NetworkType) -> String {
-    let kas = sompi_to_tondi(sompi).separated_string();
+pub fn sau_to_tondi_string_with_suffix(sau: u64, network_type: &NetworkType) -> String {
+    let tondi = sau_to_tondi(sau).separated_string();
     let suffix = tondi_suffix(network_type);
-    format!("{kas} {suffix}")
+    format!("{tondi} {suffix}")
 }
 
 #[inline]
-pub fn padded_sompi_to_tondi_string_with_suffix(
-    sompi: u64,
+pub fn padded_sau_to_tondi_string_with_suffix(
+    sau: u64,
     network_type: &NetworkType,
     padding: usize,
 ) -> String {
-    let kas = padded_sompi_to_tondi_string(sompi, padding);
+    let tondi = padded_sau_to_tondi_string(sau, padding);
     let suffix = tondi_suffix(network_type);
-    format!("{kas} {suffix}")
+    format!("{tondi} {suffix}")
 }
 
 pub fn paint_header_icon(ui: &mut Ui, openness: f32, response: &Response) {

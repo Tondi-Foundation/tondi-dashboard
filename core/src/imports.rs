@@ -1,6 +1,6 @@
 pub use cfg_if::cfg_if;
 pub use downcast_rs::{impl_downcast, Downcast, DowncastSync};
-pub use tondi_consensus_core::constants::SOMPI_PER_TONDI;
+pub use tondi_consensus_core::constants::SAU_PER_TONDI;
 pub use tondi_consensus_core::network::{NetworkId, NetworkType};
 pub use tondi_consensus_core::Hash as TondiHash;
 pub use tondi_metrics_core::MetricsSnapshot;

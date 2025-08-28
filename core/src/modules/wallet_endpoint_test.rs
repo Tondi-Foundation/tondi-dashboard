@@ -198,17 +198,17 @@ impl WalletEndpointTest {
         let _payment_secret = wallet_secret.clone();
         
         let destination_address = Address::try_from(self.test_address.as_str())?;
-        let amount_sompi = (self.test_amount.parse::<f64>().map_err(|e| Error::custom(format!("Invalid amount: {}", e)))? * 100_000_000.0) as u64;
+        let amount_sau = (self.test_amount.parse::<f64>().map_err(|e| Error::custom(format!("Invalid amount: {}", e)))? * 100_000_000.0) as u64;
         
         let payment_output = PaymentOutput {
             address: destination_address,
-            amount: amount_sompi,
+            amount: amount_sau,
         };
         
         let request = AccountsEstimateRequest {
             account_id,
             destination: payment_output.into(),
-            priority_fee_sompi: Fees::None,
+            priority_fee_sau: Fees::None,
             payload: None,
         };
         
@@ -244,18 +244,18 @@ impl WalletEndpointTest {
         let _payment_secret = wallet_secret.clone();
         
         let destination_address = Address::try_from(self.test_address.as_str())?;
-        let amount_sompi = (self.test_amount.parse::<f64>().map_err(|e| Error::custom(format!("Invalid amount: {}", e)))? * 100_000_000.0) as u64;
+        let amount_sau = (self.test_amount.parse::<f64>().map_err(|e| Error::custom(format!("Invalid amount: {}", e)))? * 100_000_000.0) as u64;
         
         let payment_output = PaymentOutput {
             address: destination_address,
-            amount: amount_sompi,
+            amount: amount_sau,
         };
         
         // First estimate to get fee
         let estimate_request = AccountsEstimateRequest {
             account_id,
             destination: payment_output.clone().into(),
-            priority_fee_sompi: Fees::None,
+            priority_fee_sau: Fees::None,
             payload: None,
         };
         
@@ -264,7 +264,7 @@ impl WalletEndpointTest {
         // Note: In a real scenario, you would use accounts_send_call here
         // For testing purposes, we'll just return the estimation
         Ok(format!("Transaction ready to send: {} TONDI + {} TONDI fee = {} TONDI total",
-            amount_sompi / 100_000_000,
+            amount_sau / 100_000_000,
             estimate_response.generator_summary.aggregated_fees / 100_000_000,
             estimate_response.generator_summary.final_transaction_amount.unwrap_or(0) / 100_000_000))
     }

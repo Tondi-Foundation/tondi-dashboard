@@ -59,10 +59,10 @@ pub fn format_partial_string(text: impl Into<String>, range: Option<usize>) -> S
     }
 }
 
-/// SOMPI (u64) to TONDI (string) with suffix layout job generator
+/// SAU (u64) to TONDI (string) with suffix layout job generator
 pub fn s2kws_layout_job(
     enable: bool,
-    sompi: u64,
+    sau: u64,
     network_type: &NetworkType,
     color: Color32,
     font: FontId,
@@ -72,8 +72,8 @@ pub fn s2kws_layout_job(
 
     let mut layout_job = LayoutJob::default();
     if !enable {
-        let kas = sompi_to_tondi_string_with_suffix(sompi, network_type);
-        let text = RichText::new(kas).color(color).font(font.clone());
+        let tondi = sau_to_tondi_string_with_suffix(sau, network_type);
+        let text = RichText::new(tondi).color(color).font(font.clone());
         text.append_to(
             &mut layout_job,
             &style,
@@ -81,7 +81,7 @@ pub fn s2kws_layout_job(
             Align::Center,
         );
         layout_job
-    } else if sompi == 0 {
+    } else if sau == 0 {
         let transparent = color.gamma_multiply(0.25);
         let left = RichText::new("0.0").color(color).font(font.clone());
         let right = RichText::new("0000000 ")
@@ -109,12 +109,12 @@ pub fn s2kws_layout_job(
         layout_job
     } else {
         let transparent = color.gamma_multiply(0.05);
-        let kas = sompi_to_tondi_string_with_trailing_zeroes(sompi);
-        let mut digits = kas.chars().rev().take_while(|c| *c == '0').count();
+        let tondi = sau_to_tondi_string_with_trailing_zeroes(sau);
+        let mut digits = tondi.chars().rev().take_while(|c| *c == '0').count();
         if digits == 8 {
             digits = 7;
         }
-        let (left, right) = kas.split_at(kas.len() - digits);
+        let (left, right) = tondi.split_at(tondi.len() - digits);
         let right = right.to_string() + " ";
 
         let left = RichText::new(left).color(color).font(font.clone());
@@ -198,7 +198,7 @@ pub fn format_currency_with_symbol(price: f64, precision: usize, symbol: &str) -
 
 pub fn precision_from_symbol(symbol: &str) -> usize {
     match symbol {
-        "kas" => 8,
+        "tondi" => 8,
         "btc" => 8,
         // "usd" => 2,
         _ => 6,
