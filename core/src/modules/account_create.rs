@@ -77,7 +77,6 @@ struct Context {
     // payment_secret_confirm: String,
     word_count: WordCount,
     import_mnemonic: bool,
-    import_legacy: bool,
     import_with_bip39_passphrase: bool,
     import_private_key_mnemonic: String,
     prv_keys: Vec<Arc<PrvKeyDataInfo>>,
@@ -242,7 +241,6 @@ impl ModuleT for AccountCreate {
                 let submit = WalletCreate::import_selection::<State>(
                     &mut self.state,
                     &mut self.context.word_count,
-                    &mut self.context.import_legacy,
                     &mut self.context.import_with_bip39_passphrase,
                     ui,
                     Some(|state: &mut State|{
@@ -451,7 +449,7 @@ impl ModuleT for AccountCreate {
                         let payment_secret;
 
                         let prv_key_data_id = if args.import_mnemonic {
-                            let requires_bip39_passphrase = !args.import_legacy && args.import_with_bip39_passphrase;
+                            let requires_bip39_passphrase = args.import_with_bip39_passphrase;
                             payment_secret = requires_bip39_passphrase.then_some(Secret::from(args.payment_secret.as_str()));
                             let mnemonic = Secret::from(sanitize_mnemonic(args.import_private_key_mnemonic.as_str()));
                             let key_data_name = None;
@@ -468,11 +466,7 @@ impl ModuleT for AccountCreate {
                             *args.prv_key_data_info.as_ref().unwrap().id()
                         };
 
-                        let account_create_args = if args.import_legacy {
-                            AccountCreateArgs::new_legacy(prv_key_data_id, account_name)
-                        }else{
-                            AccountCreateArgs::new_bip32(prv_key_data_id, payment_secret, account_name, None)
-                        };
+                        let account_create_args = AccountCreateArgs::new_bip32(prv_key_data_id, payment_secret, account_name, None);
                         let account_descriptor = wallet.accounts_create(wallet_secret, account_create_args).await?;
                         Ok(account_descriptor)
                     });

@@ -76,7 +76,6 @@ struct Context {
     import_private_key_mnemonic : String,
     import_private_key_mnemonic_error : Option<String>,
     import_with_bip39_passphrase : bool,
-    import_legacy : bool,
     import_advanced : bool,
     wallet_file_data: Option<WalletFileData>
 }
@@ -98,7 +97,6 @@ impl Zeroize for Context {
         self.import_private_key_mnemonic_error.zeroize();
         self.import_with_bip39_passphrase.zeroize();
         self.decrypt_wallet_secret.zeroize();
-        self.import_legacy.zeroize();
         self.import_advanced.zeroize();
         self.payment_secret_submitted = false;
     }
@@ -124,11 +122,8 @@ impl WalletCreate {
         }
     }
     
-    pub fn import_selection<M>(context:&mut M, word_count: &mut WordCount, import_legacy: &mut bool, bip39_passphrase: &mut bool, ui: &mut Ui, back_callback:Option<impl FnOnce(&mut M)>)->bool{
+    pub fn import_selection<M>(context:&mut M, word_count: &mut WordCount, bip39_passphrase: &mut bool, ui: &mut Ui, back_callback:Option<impl FnOnce(&mut M)>)->bool{
         let mut submit = false;
-        if *import_legacy {
-            *bip39_passphrase = false;
-        }
         let mut panel = Panel::new(context)
             .with_caption(i18n("Import Existing Private Key"))
             .with_close_enabled(false, |_|{
@@ -138,49 +133,20 @@ impl WalletCreate {
                 ui.label(i18n("Please select the private key type you would like to import in the new wallet"));
             })
             .with_body(|_this,ui| {
-                // ui.label("(You can import additional private keys later, once the wallet has been created)");
-                // let word_12_selected = !*import_legacy && *word_count == WordCount::Words12;
-                // if ui.large_selected_button(word_12_selected, i18n("12 word mnemonic")).clicked() {
                 if ui.large_button(i18n("12 word mnemonic")).clicked() {
                     *word_count = WordCount::Words12;
-                    *import_legacy = false;
                     submit = true;
                 }
                 ui.label("");
 
-                // if ui.large_selected_button(*word_count == WordCount::Words24, i18n("24 word mnemonic")).clicked() {
                 if ui.large_button(i18n("24 word mnemonic")).clicked() {
                     *word_count = WordCount::Words24;
-                    *import_legacy = false;
                     submit = true;
                 }
                 ui.label("");
-                ui.add_enabled_ui(!*import_legacy, |ui|{
-                    ui.checkbox(bip39_passphrase, i18n("Your mnemonic is protected with a bip39 passphrase"));
-                });
-                ui.label("");
-
-                ui.medium_separator();
-                ui.label("");
-
-                ui.label(i18n("Select this option if your wallet was created"));
-                ui.label(i18n("using KDX or tondinet.io web wallet"));
-                ui.label("");
-                // if ui.large_selected_button(*import_legacy, format!("    {}    ", i18n("Legacy 12 word mnemonic"))).clicked() {
-                if ui.large_button_enabled(!*bip39_passphrase,format!("    {}    ", i18n("Legacy 12 word mnemonic"))).clicked() {
-                    *word_count = WordCount::Words12;
-                    *import_legacy = true;
-                    *bip39_passphrase = false;
-                    submit = true;
-                }
-                // ui.label("");
-
-                // ui.medium_separator();
-                // ui.label("");
                 
-                // if ui.large_button(i18n("Continue")).clicked() {
-                //     submit = true;
-                // }
+                ui.checkbox(bip39_passphrase, i18n("Your mnemonic is protected with a bip39 passphrase"));
+                ui.label("");
             })
             .with_footer(|_this,_ui| {
             });
@@ -328,7 +294,6 @@ impl ModuleT for WalletCreate {
             State::KeySelection => {
 
                 self.context.import_with_bip39_passphrase = false;
-                self.context.import_legacy = false;
                 self.context.import_private_key = false;
                 self.context.import_private_key_file = false;
 
@@ -389,7 +354,6 @@ impl ModuleT for WalletCreate {
             State::ImportSelection => {
                 let submit = Self::import_selection::<State>(&mut self.state,
                     &mut self.context.word_count,
-                    &mut self.context.import_legacy,
                     &mut self.context.import_with_bip39_passphrase,
                     ui,
                     Some(|state : &mut State|{
@@ -699,157 +663,152 @@ impl ModuleT for WalletCreate {
                     .render(ui);
             }
             State::PaymentSecret => {
-
-                let mut proceed = self.context.import_legacy || (self.context.import_private_key && !self.context.import_with_bip39_passphrase);
+                let mut proceed = self.context.import_private_key && !self.context.import_with_bip39_passphrase;
                 let mut continue_or_skip = false;
-                if !self.context.import_legacy {
-                    Panel::new(self)
-                        .with_caption(i18n("Payment & Recovery Password"))
-                        .with_back(|this| {
-                            this.state = State::WalletSecret;
-                            this.focus.next(Focus::WalletSecret);
-                        })
-                        .with_close_enabled(false, |_|{
-                        })
-                        .with_header(|this,ui| {
-                            if this.context.import_with_bip39_passphrase {
+                Panel::new(self)
+                    .with_caption(i18n("Payment & Recovery Password"))
+                    .with_back(|this| {
+                        this.state = State::WalletSecret;
+                        this.focus.next(Focus::WalletSecret);
+                    })
+                    .with_close_enabled(false, |_|{
+                    })
+                    .with_header(|this,ui| {
+                        if this.context.import_with_bip39_passphrase {
 
-                            } else {
-                                ui.heading(i18n("Optional"));
-                                ui.label(" ");
-                                ui.label(i18n("The optional payment & mnemonic recovery passphrase, known as BIP39 passphrase, if provided, will be required to \
-                                send payments. This passphrase will also be required when recovering your wallet in addition to your mnemonic.\
-                                If you loose or forget this passphrase, you will not \
-                                be able to use mnemonic to recover your wallet!"));
-                            }
-                        })
-                        .with_body(|this,ui| {
-                            let mut submit = false;
-                            let mut change = false;
-        
-        
-                            if !this.context.import_with_bip39_passphrase && ui.checkbox(&mut this.context.enable_payment_secret, i18n("Enable optional BIP39 passphrase")).changed() {
-                                 this.context.payment_secret_submitted = false;
-                            }
+                        } else {
+                            ui.heading(i18n("Optional"));
+                            ui.label(" ");
+                            ui.label(i18n("The optional payment & mnemonic recovery passphrase, known as BIP39 passphrase, if provided, will be required to \
+                            send payments. This passphrase will also be required when recovering your wallet in addition to your mnemonic.\
+                            If you loose or forget this passphrase, you will not \
+                            be able to use mnemonic to recover your wallet!"));
+                        }
+                    })
+                    .with_body(|this,ui| {
+                        let mut submit = false;
+                        let mut change = false;
 
-                            if this.context.enable_payment_secret || this.context.import_with_bip39_passphrase {
-                                
-                                ui.label("");
+                        if !this.context.import_with_bip39_passphrase && ui.checkbox(&mut this.context.enable_payment_secret, i18n("Enable optional BIP39 passphrase")).changed() {
+                             this.context.payment_secret_submitted = false;
+                        }
 
-                                TextEditor::new(
-                                    &mut this.context.payment_secret,
-                                    &mut this.focus,
-                                    Focus::PaymentSecret,
-                                    |ui, text| {
-                                        // ui.add_space(8.);
-                                        ui.label(RichText::new(i18n("Enter BIP39 passphrase")).size(12.).raised());
-                                        ui.add_sized(editor_size, TextEdit::singleline(text)
-                                            .password(!this.context.payment_secret_show)
-                                            .vertical_align(Align::Center))
-                                    },
-                                )
-                                .change(|_|{
-                                    change = true;
-                                })
-                                .submit(|text,focus| {
-                                    if text.is_not_empty() {
-                                        focus.next(Focus::PaymentSecretConfirm);
-                                    } else {
-                                        submit = true;
-                                    }
-                                })
-                                .build(ui);
+                        if this.context.enable_payment_secret || this.context.import_with_bip39_passphrase {
+                            
+                            ui.label("");
 
-                                ui.label("");
-                                TextEditor::new(
-                                    &mut this.context.payment_secret_confirm,
-                                    &mut this.focus,
-                                    Focus::PaymentSecretConfirm,
-                                    |ui, text| {
-                                        ui.label(RichText::new(i18n("Confirm BIP39 passphrase")).size(12.).raised());
-                                        ui.add_sized(editor_size, TextEdit::singleline(text)
-                                            .password(!this.context.payment_secret_show)
-                                            .vertical_align(Align::Center))
-                                    },
-                                )
-                                .submit(|_text,_focus| {
-                                    submit = true;
-                                })
-                                .build(ui);
-
-                                ui.label("");
-                                ui.checkbox(&mut this.context.payment_secret_show, i18n("Show passphrase"));
-                                ui.label("");
-
-                                if change {
-                                    this.context.payment_secret_submitted = false;
-                                    let payment_secret = this
-                                        .context
-                                        .payment_secret
-                                        .is_not_empty()
-                                        .then_some(this.context.payment_secret.clone())
-                                        .or(this.context
-                                            .payment_secret_confirm
-                                            .is_not_empty()
-                                            .then_some(this.context.payment_secret_confirm.clone())
-                                        );
-                                    this.context.payment_secret_score = payment_secret.map(secret_score);
-                                }
-
-                                if let Some(score) = this.context.payment_secret_score {
-                                    ui.label("");
-                                    ui.label(secret_score_to_text(score));
-                                    if score < 80.0 {
-                                        ui.label("");
-                                        ui.label(RichText::new(i18n("Passphrase is too weak")).color(warning_color()));
-                                        if !core.settings.developer.password_restrictions_disabled() {
-                                            submit = false;
-                                            //ui.label(RichText::new(i18n("Please create a stronger passphrase")).color(egui::Color32::from_rgb(255, 120, 120)));
-                                        }
-                                    }
-                                }
-                                ui.label("");
-
-                                if this.context.payment_secret.is_not_empty() && this.context.payment_secret != this.context.payment_secret_confirm {
-                                    ui.label(" ");
-                                    ui.label(RichText::new(i18n("Passphrases do not match")).color(theme_color().error_color));
-                                    ui.label(" ");
-                                    submit = false;
+                            TextEditor::new(
+                                &mut this.context.payment_secret,
+                                &mut this.focus,
+                                Focus::PaymentSecret,
+                                |ui, text| {
+                                    ui.label(RichText::new(i18n("Enter BIP39 passphrase")).size(12.).raised());
+                                    ui.add_sized(editor_size, TextEdit::singleline(text)
+                                        .password(!this.context.payment_secret_show)
+                                        .vertical_align(Align::Center))
+                                },
+                            )
+                            .change(|_|{
+                                change = true;
+                            })
+                            .submit(|text,focus| {
+                                if text.is_not_empty() {
+                                    focus.next(Focus::PaymentSecretConfirm);
                                 } else {
-                                    ui.label(" ");
+                                    submit = true;
                                 }
+                            })
+                            .build(ui);
 
-                                if submit {
-                                    if this.context.payment_secret.is_empty() {
-                                        this.context.payment_secret_submitted = true;
-                                    } else if this.context.import_with_bip39_passphrase {
-                                        proceed = true;
-                                    } else {
-                                        this.state = State::CreateWalletConfirm;
-                                        this.focus.clear();
+                            ui.label("");
+                            TextEditor::new(
+                                &mut this.context.payment_secret_confirm,
+                                &mut this.focus,
+                                Focus::PaymentSecretConfirm,
+                                |ui, text| {
+                                    ui.label(RichText::new(i18n("Confirm BIP39 passphrase")).size(12.).raised());
+                                    ui.add_sized(editor_size, TextEdit::singleline(text)
+                                        .password(!this.context.payment_secret_show)
+                                        .vertical_align(Align::Center))
+                                },
+                            )
+                            .submit(|_text,_focus| {
+                                submit = true;
+                            })
+                            .build(ui);
+
+                            ui.label("");
+                            ui.checkbox(&mut this.context.payment_secret_show, i18n("Show passphrase"));
+                            ui.label("");
+
+                            if change {
+                                this.context.payment_secret_submitted = false;
+                                let payment_secret = this
+                                    .context
+                                    .payment_secret
+                                    .is_not_empty()
+                                    .then_some(this.context.payment_secret.clone())
+                                    .or(this.context
+                                        .payment_secret_confirm
+                                        .is_not_empty()
+                                        .then_some(this.context.payment_secret_confirm.clone())
+                                    );
+                                this.context.payment_secret_score = payment_secret.map(secret_score);
+                            }
+
+                            if let Some(score) = this.context.payment_secret_score {
+                                ui.label("");
+                                ui.label(secret_score_to_text(score));
+                                if score < 80.0 {
+                                    ui.label("");
+                                    ui.label(RichText::new(i18n("Passphrase is too weak")).color(warning_color()));
+                                    if !core.settings.developer.password_restrictions_disabled() {
+                                        submit = false;
                                     }
                                 }
-                                if this.context.payment_secret_submitted {
-                                    ui.label(RichText::new(i18n("Please provide BIP39 passphrase.")).color(theme_color().error_color));
+                            }
+                            ui.label("");
+
+                            if this.context.payment_secret.is_not_empty() && this.context.payment_secret != this.context.payment_secret_confirm {
+                                ui.label(" ");
+                                ui.label(RichText::new(i18n("Passphrases do not match")).color(theme_color().error_color));
+                                ui.label(" ");
+                                submit = false;
+                            }
+
+                            if submit {
+                                if this.context.payment_secret.is_not_empty() {
+                                    this.context.payment_secret_submitted = true;
+                                    this.context.payment_secret_confirm.zeroize();
+                                    this.context.payment_secret.zeroize();
+                                    this.context.enable_payment_secret = false;
+                                    this.context.payment_secret_show = false;
+                                    this.context.payment_secret_score = None;
+                                    this.state = State::CreateWalletConfirm;
+                                    this.focus.clear();
+                                } else {
+                                    this.state = State::CreateWalletConfirm;
+                                    this.focus.clear();
                                 }
                             }
-                        })
-                        .with_footer(|this,ui| {
-
-                            if this.context.enable_payment_secret || this.context.import_with_bip39_passphrase {
-                                let is_weak = !core.settings.developer.password_restrictions_disabled() && this.context.payment_secret_score.unwrap_or_default() < 80.0;
-                                let enabled = this.context.payment_secret == this.context.payment_secret_confirm && this.context.payment_secret.is_not_empty();
-                                if ui.large_button_enabled(enabled && !is_weak, i18n("Continue")).clicked() {
-                                    continue_or_skip = true;
-                                }
-                            } else if ui.large_button_enabled(true, i18n("Skip")).clicked() {
-                                this.context.payment_secret.zeroize();
+                            if this.context.payment_secret_submitted {
+                                ui.label(RichText::new(i18n("Please provide BIP39 passphrase.")).color(theme_color().error_color));
+                            }
+                        }
+                    })
+                    .with_footer(|this,ui| {
+                        if this.context.enable_payment_secret || this.context.import_with_bip39_passphrase {
+                            let is_weak = !core.settings.developer.password_restrictions_disabled() && this.context.payment_secret_score.unwrap_or_default() < 80.0;
+                            let enabled = this.context.payment_secret == this.context.payment_secret_confirm && this.context.payment_secret.is_not_empty();
+                            if ui.large_button_enabled(enabled && !is_weak, i18n("Continue")).clicked() {
                                 continue_or_skip = true;
                             }
-
-                        })
-                        .render(ui);
-                }
+                        } else if ui.large_button_enabled(true, i18n("Skip")).clicked() {
+                            this.context.payment_secret.zeroize();
+                            continue_or_skip = true;
+                        }
+                    })
+                    .render(ui);
 
                 if proceed || continue_or_skip{
                     if self.context.import_private_key_file {
@@ -861,9 +820,7 @@ impl ModuleT for WalletCreate {
                         self.state = State::CreateWalletConfirm;
                     }
                     self.focus.clear();
-                    
                 }
-
             }
 
             State::ImportMnemonic => {
@@ -909,7 +866,6 @@ impl ModuleT for WalletCreate {
                     wallet_import_result.mark_pending();
                     let import_result = wallet_import_result.clone();
                     let file_handle = rfd::AsyncFileDialog::new()
-                        .add_filter("LegacyWallet", &["kpk"])
                         .add_filter("GolangWallet", &["json"])
                         .set_directory("/")
                         .pick_file();
@@ -1039,10 +995,6 @@ impl ModuleT for WalletCreate {
                         sleep(Duration::from_secs(2)).await;
     
                         match wallet_file_data{
-                            WalletFileData::Legacy(data)=>{
-                                let key_data = tondi_wallet_core::compat::gen0::get_v0_keydata(&data, &import_secret)?;
-                                Ok(WalletFileDecryptedData::Legacy(key_data.mnemonic.clone()))
-                            }
                             WalletFileData::GoWallet(data)=>{
                                 let mnemonic = match data {
                                     WalletType::SingleV0(data)=>{
@@ -1067,13 +1019,6 @@ impl ModuleT for WalletCreate {
                     match result {
                         Ok(wallet_file_decrypted_data) => {
                             match wallet_file_decrypted_data{
-                                WalletFileDecryptedData::Legacy(mnemonic)=>{
-                                    self.context.word_count = WordCount::Words12;
-                                    self.context.import_legacy = true;
-                                    self.context.import_with_bip39_passphrase = false;
-                                    self.context.import_private_key_mnemonic = mnemonic;
-                                    self.state = State::WalletName;
-                                }
                                 WalletFileDecryptedData::Core(mnemonic)=>{
                                     let size = mnemonic.trim().split(' ').collect::<Vec<_>>().len();
                                     match size{
@@ -1083,7 +1028,6 @@ impl ModuleT for WalletCreate {
                                             }else{
                                                 self.context.word_count = WordCount::Words24;
                                             }
-                                            self.context.import_legacy = false;
                                             self.context.import_with_bip39_passphrase = false;
                                             self.context.import_private_key_mnemonic = mnemonic;
                                             self.state = State::WalletName;
@@ -1098,21 +1042,15 @@ impl ModuleT for WalletCreate {
                         }
                         Err(err) => {
                             log_error!("{} {}",i18n("Wallet decrypting error:"), err);
-                            self.state = State::WalletError(Arc::new(err), State::WalletFileSecret.into());
+                            self.state = State::WalletError(Arc::new(err), State::ImportMnemonicInteractive.into());
                         }
                     }
                 }
             }
 
             State::ImportWallet => {
-                let import_legacy = self.context.import_legacy;
-                let caption = if import_legacy {
-                    i18n("Importing Legacy Wallet")
-                }else{
-                    i18n("Importing Wallet")
-                };
                 Panel::new(self)
-                    .with_caption(caption)
+                    .with_caption(i18n("Importing Wallet"))
                     .with_header(|_, ui|{
                         ui.label(" ");
                         ui.label(i18n("Please wait..."));
@@ -1175,25 +1113,14 @@ impl ModuleT for WalletCreate {
                         let prv_key_data_id = wallet.clone().prv_key_data_create(wallet_secret.clone(), prv_key_data_args).await?;
 
                         let mut account_descriptors = Vec::with_capacity(number_of_accounts);
-                        if import_legacy{
-                            for _account_index in 0..number_of_accounts {
-                                let account_create_args = AccountCreateArgs::new_legacy(
-                                    prv_key_data_id,
-                                    args.account_name.is_not_empty().then_some(args.account_name.clone()),
-                                );
-                                account_descriptors.push(wallet.clone().accounts_create(wallet_secret.clone(), account_create_args).await?);
-                            }
-                        }else{
-                            for account_index in 0..number_of_accounts {
-                                let account_create_args = AccountCreateArgs::new_bip32(
-                                    prv_key_data_id,
-                                    payment_secret.clone(),
-                                    args.account_name.is_not_empty().then_some(args.account_name.clone()),
-                                    Some(account_index as u64),
-                                );
-                                // log_info!("account_create_args: {:?}", account_create_args);
-                                account_descriptors.push(wallet.clone().accounts_create(wallet_secret.clone(), account_create_args).await?);
-                            }
+                        for account_index in 0..number_of_accounts {
+                            let account_create_args = AccountCreateArgs::new_bip32(
+                                prv_key_data_id,
+                                payment_secret.clone(),
+                                args.account_name.is_not_empty().then_some(args.account_name.clone()),
+                                Some(account_index as u64),
+                            );
+                            account_descriptors.push(wallet.clone().accounts_create(wallet_secret.clone(), account_create_args).await?);
                         }
 
                         wallet.clone().flush(wallet_secret).await?;

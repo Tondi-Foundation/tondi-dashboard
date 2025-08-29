@@ -1,6 +1,6 @@
 use crate::imports::*;
 use egui_phosphor::thin::*;
-use tondi_wallet_core::{wallet::Wallet, account::{BIP32_ACCOUNT_KIND, LEGACY_ACCOUNT_KIND}};
+use tondi_wallet_core::{wallet::Wallet, account::{BIP32_ACCOUNT_KIND}};
 
 #[derive(Clone)]
 pub enum State {
@@ -167,7 +167,7 @@ impl ModuleT for Scanner {
                             for selectable_account in account_collection.list() {
 
                                 match selectable_account.account_kind().as_ref() {
-                                    BIP32_ACCOUNT_KIND | LEGACY_ACCOUNT_KIND => {
+                                    BIP32_ACCOUNT_KIND => {
                                         if ui.account_selector_button(selectable_account, &network_type, false, core.balance_padding()).clicked() {
                                             this.state = State::Settings {
                                                 account: selectable_account.clone(),
