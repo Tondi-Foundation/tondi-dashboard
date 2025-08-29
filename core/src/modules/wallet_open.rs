@@ -77,6 +77,7 @@ impl ModuleT for WalletOpen {
                         if !wallet_descriptor_list_is_empty {
                             wallet_descriptor_list.sort();
                             for wallet_descriptor in wallet_descriptor_list.into_iter() {
+                                // 钱包选择按钮 - 保持原来的居中效果
                                 if ui.add_sized(theme_style().large_button_size(), CompositeButton::image_and_text(
                                     Composite::icon(egui_phosphor::thin::FINGERPRINT_SIMPLE),
                                     wallet_descriptor.title.as_deref().unwrap_or_else(||i18n("NO NAME")),
@@ -84,6 +85,15 @@ impl ModuleT for WalletOpen {
                                 )).clicked() {
                                     this.state = State::Unlock { wallet_descriptor : wallet_descriptor.clone(), error : None };
                                 }
+
+                                // 删除按钮 - 在钱包按钮右边，不破坏居中效果
+                                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                                    if ui.button("🗑️").clicked() {
+                                        core.borrow_mut().get_mut::<modules::WalletDelete>().confirm_delete(wallet_descriptor.clone());
+                                        // 显示删除确认对话框
+                                        core.borrow_mut().select::<modules::WalletDelete>();
+                                    }
+                                });
                             }
                             ui.label(" ");
                             ui.separator();

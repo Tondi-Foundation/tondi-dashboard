@@ -88,6 +88,7 @@ impl WalletMenu {
                             RichText::new(egui_phosphor::thin::FINGERPRINT_SIMPLE).color(Color32::DARK_GRAY)
                         };
 
+                        // 钱包选择按钮 - 保持原来的居中效果
                         if ui.add(CompositeButton::image_and_text(
                             Composite::icon(icon),
                             title,
@@ -97,6 +98,15 @@ impl WalletMenu {
                             core.get_mut::<modules::WalletOpen>().open(wallet_descriptor.clone());
                             core.select::<modules::WalletOpen>();
                         }
+
+                        // 删除按钮 - 在钱包按钮右边，不破坏居中效果
+                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                            if ui.button("🗑️").clicked() {
+                                core.get_mut::<modules::WalletDelete>().confirm_delete(wallet_descriptor.clone());
+                                // 显示删除确认对话框
+                                core.select::<modules::WalletDelete>();
+                            }
+                        });
                     });
 
                     ui.label("");
