@@ -100,13 +100,12 @@ impl WalletMenu {
                         }
 
                         // 删除按钮 - 在钱包按钮右边，不破坏居中效果
-                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                            if ui.button("🗑️").clicked() {
-                                core.get_mut::<modules::WalletDelete>().confirm_delete(wallet_descriptor.clone());
-                                // 显示删除确认对话框
-                                core.select::<modules::WalletDelete>();
-                            }
-                        });
+                        ui.add_space(8.0); // 添加一些间距
+                        if ui.button("🗑️").clicked() {
+                            core.get_mut::<modules::WalletDelete>().confirm_delete(wallet_descriptor.clone());
+                            // 显示删除确认对话框
+                            core.select::<modules::WalletDelete>();
+                        }
                     });
 
                     ui.label("");
