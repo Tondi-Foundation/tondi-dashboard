@@ -300,7 +300,7 @@ impl Overview {
                 
                                         ui.hyperlink_to_tab(
                                             format!("• {DATABASE} {}",i18n("Explorer")),
-                                            "https://explorer-tn10.tondi.org/",
+                                            "https://explorer.tondi.org/",
                                         );
                                         ui.hyperlink_to_tab(
                                             format!("• {HAND_COINS} {}",i18n("Faucet")),
@@ -323,7 +323,7 @@ impl Overview {
                 
                                         ui.hyperlink_to_tab(
                                             format!("• {DATABASE} {}",i18n("Explorer")),
-                                            "https://explorer-dev11.tondi.org/",
+                                            "https://explorer.tondi.org/",
                                         );
                                     });
                                 self.render_network_info(core, ui);
