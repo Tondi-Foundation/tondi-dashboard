@@ -14,6 +14,7 @@ pkgs.mkShell {
     glib
     clang
     openssl
+    wayland
     libclang
   ];
 }
