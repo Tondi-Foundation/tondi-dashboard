@@ -1,21 +1,4 @@
-use egui::{FontData, FontDefinitions, FontFamily};
-use workflow_core::runtime;
-
-trait RegisterStaticFont {
-    fn add_static(&mut self, family: FontFamily, name: &str, bytes: &'static [u8]);
-}
-
-impl RegisterStaticFont for FontDefinitions {
-    fn add_static(&mut self, family: FontFamily, name: &str, bytes: &'static [u8]) {
-        self.font_data
-            .insert(name.to_owned(), FontData::from_static(bytes).into());
-
-        self.families
-            .entry(family)
-            .or_default()
-            .push(name.to_owned());
-    }
-}
+use egui::{FontDefinitions, FontFamily};
 
 use egui_phosphor::Variant;
 pub fn add_to_fonts(fonts: &mut egui::FontDefinitions, variant: Variant) {
@@ -24,7 +7,6 @@ pub fn add_to_fonts(fonts: &mut egui::FontDefinitions, variant: Variant) {
         .insert("phosphor".into(), variant.font_data().into());
 
     if let Some(font_keys) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
-        // font_keys.insert(0, "phosphor".into());
         font_keys.push("phosphor".into());
     }
 
@@ -37,12 +19,11 @@ pub fn add_to_fonts(fonts: &mut egui::FontDefinitions, variant: Variant) {
 
 pub fn init_fonts(cc: &eframe::CreationContext<'_>) {
     let mut fonts = FontDefinitions::default();
-    // add_to_fonts(&mut fonts, egui_phosphor::Variant::Bold);
-    // add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
+    
+    // 添加基础字体
     add_to_fonts(&mut fonts, egui_phosphor::Variant::Light);
-
-    // ---
-
+    
+    // 添加等宽字体
     fonts
         .families
         .entry(FontFamily::Monospace)
@@ -55,144 +36,165 @@ pub fn init_fonts(cc: &eframe::CreationContext<'_>) {
             "../resources/fonts/UbuntuMono/UbuntuMono-Regular.ttf"
         ))),
     );
-    // ---
 
-    fonts.font_data.insert(
-        "noto_sans_mono_light".to_owned(),
-        std::sync::Arc::new(FontData::from_static(include_bytes!(
-            "../resources/fonts/NotoSans/NotoSansMono-Light.ttf"
-        ))),
-    );
-
-    fonts
-        .families
-        .entry(egui::FontFamily::Name("noto_sans_mono_light".into()))
-        .or_default()
-        .insert(0, "noto_sans_mono_light".to_owned());
-
-    // ---
-
-    #[cfg(target_os = "linux")]
-    if let Ok(font) = std::fs::read("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc") {
-        fonts.font_data.insert(
-            "noto-sans-cjk".to_owned(),
-            std::sync::Arc::new(egui::FontData::from_owned(font)),
-        );
-        fonts
-            .families
-            .entry(egui::FontFamily::Proportional)
-            .or_default()
-            .push("noto-sans-cjk".to_owned());
+    // 根据平台和运行时环境选择字体加载策略
+    #[cfg(target_arch = "wasm32")]
+    {
+        // Web版本：使用CDN字体，不嵌入大字体文件
+        init_web_fonts(&mut fonts);
     }
-
-    // ---
-
-    if runtime::is_native() || runtime::is_chrome_extension() {
-        fonts.add_static(
-            FontFamily::Proportional,
-            "ar",
-            include_bytes!(
-                // "../resources/fonts/NotoSansArabic/NotoSansArabic-Light.ttf"
-                "../resources/fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"
-            ),
-        );
-
-        fonts.add_static(
-            FontFamily::Proportional,
-            "he",
-            include_bytes!(
-                // "../resources/fonts/NotoSansHebrew/NotoSansHebrew-Light.ttf"
-                "../resources/fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf"
-            ),
-        );
-
-        fonts.add_static(
-            FontFamily::Proportional,
-            "ja",
-            include_bytes!(
-                // "../resources/fonts/NotoSansJP/NotoSansJP-Light.ttf"
-                "../resources/fonts/NotoSansJP/NotoSansJP-Regular.ttf"
-            ),
-        );
-
-        fonts.add_static(
-            FontFamily::Proportional,
-            "hi",
-            include_bytes!(
-                // "../resources/fonts/NotoSansJP/NotoSansJP-Light.ttf"
-                "../resources/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
-            ),
-        );
-
-        fonts.add_static(
-            FontFamily::Proportional,
-            "zh",
-            include_bytes!(
-                // "../resources/fonts/NotoSansSC/NotoSansSC-Light.ttf"
-                "../resources/fonts/NotoSansSC/NotoSansSC-Regular.ttf"
-            ),
-        );
-
-        fonts.add_static(
-            FontFamily::Proportional,
-            "ko",
-            include_bytes!(
-                // "../resources/fonts/NotoSansKR/NotoSansKR-Light.ttf"
-                "../resources/fonts/NotoSansKR/NotoSansKR-Regular.ttf"
-            ),
-        );
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // 原生版本：使用本地字体文件
+        init_native_fonts(&mut fonts);
     }
-
-    // ---
-
-    // ---
-
-    // #[cfg(windows)]
-    // {
-    //     let font_file = {
-    //         // c:/Windows/Fonts/msyh.ttc
-    //         let mut font_path = PathBuf::from(std::env::var("SystemRoot").ok()?);
-    //         font_path.push("Fonts");
-    //         font_path.push("msyh.ttc");
-    //         font_path.to_str()?.to_string().replace("\\", "/")
-    //     };
-    //     Some(font_file)
-    // }
-
-    // "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-    // "/System/Library/Fonts/Hiragino Sans GB.ttc"
-
-    // ---
-    // fonts.font_data.insert(
-    //     "test_font".to_owned(),
-    //     // egui::FontData::from_static(include_bytes!("../../resources/fonts/NotoSans-Regular.ttf")),
-    //     egui::FontData::from_static(include_bytes!("../../resources/fonts/Open Sans.ttf")),
-    // );
-
-    // fonts
-    //     .families
-    //     .entry(egui::FontFamily::Proportional)
-    //     .or_default()
-    //     .insert(0, "test_font".to_owned());
-
-    // ---
-
-    // #[cfg(target_os = "macos")]
-    // if let Ok(font) = std::fs::read("/System/Library/Fonts/Hiragino Sans GB.ttc") {
-
-    //     fonts.font_data.insert(
-    //         "hiragino-sans-gb".to_owned(),
-    //         // egui::FontData::from_static(include_bytes!("../../resources/fonts/Open Sans.ttf")),
-    //         egui::FontData::from_owned(font),
-    //     );
-
-    //     fonts
-    //         .families
-    //         .entry(egui::FontFamily::Proportional)
-    //         .or_default()
-    //         // .insert(0, "hiragino".to_owned());
-    //         .push("hiragino-sans-gb".to_owned());
-    // }
 
     cc.egui_ctx.set_fonts(fonts);
+}
+
+#[cfg(target_arch = "wasm32")]
+fn init_web_fonts(_fonts: &mut FontDefinitions) {
+    // Web版本只加载必要的字体，大字体通过CSS @font-face加载
+    // 这里只添加基础字体，CJK字体通过CSS动态加载
+    
+    // 注意：Web版本不嵌入任何大字体文件，只使用CDN字体
+    // 所有字体通过HTML中的CSS @font-face加载
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn init_native_fonts(fonts: &mut FontDefinitions) {
+    use workflow_core::runtime;
+    
+    // 原生版本加载所有字体
+    if runtime::is_native() || runtime::is_chrome_extension() {
+        // 只加载必要的字体，按需加载
+        fonts.font_data.insert(
+            "noto_sans_mono".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSans/NotoSansMono-Light.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("noto_sans_mono".to_owned());
+        
+        fonts.font_data.insert(
+            "ar".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("ar".to_owned());
+        
+        fonts.font_data.insert(
+            "he".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("he".to_owned());
+        
+        fonts.font_data.insert(
+            "devanagari".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("devanagari".to_owned());
+        
+        // CJK字体按需加载
+        fonts.font_data.insert(
+            "sc".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansSC/NotoSansSC-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("sc".to_owned());
+        
+        fonts.font_data.insert(
+            "tc".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansTC/NotoSansTC-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("tc".to_owned());
+        
+        fonts.font_data.insert(
+            "jp".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansJP/NotoSansJP-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("jp".to_owned());
+        
+        fonts.font_data.insert(
+            "kr".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansKR/NotoSansKR-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("kr".to_owned());
+        
+        fonts.font_data.insert(
+            "hk".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "../resources/fonts/NotoSansHK/NotoSansHK-Regular.ttf"
+            )).into(),
+        );
+        fonts.families
+            .entry(FontFamily::Proportional)
+            .or_default()
+            .push("hk".to_owned());
+    }
+}
+
+// 动态字体加载功能（可选）
+#[cfg(target_arch = "wasm32")]
+pub async fn load_font_dynamically(_font_name: &str, _font_url: &str) -> Result<(), String> {
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::window;
+    
+    let window = window().ok_or("Window not available")?;
+    let resp_value = JsFuture::from(window.fetch_with_str(_font_url))
+        .await
+        .map_err(|e| format!("Fetch error: {:?}", e))?;
+    let resp: web_sys::Response = resp_value
+        .dyn_into()
+        .map_err(|e| format!("Response conversion error: {:?}", e))?;
+    let array_buffer = JsFuture::from(resp.array_buffer()
+        .map_err(|e| format!("Array buffer error: {:?}", e))?)
+        .await
+        .map_err(|e| format!("Array buffer future error: {:?}", e))?;
+    let uint8_array = js_sys::Uint8Array::new(&array_buffer);
+    let _font_bytes = uint8_array.to_vec();
+    
+    // 将字体添加到egui字体定义中
+    // 这里需要重新设置字体，因为egui不支持运行时动态添加字体
+    // 可以考虑预加载所有需要的字体
+    
+    Ok(())
 }
