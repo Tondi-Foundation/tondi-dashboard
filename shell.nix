@@ -1,20 +1,29 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.mkShell {
+
+with pkgs;
+let
+  LD_LIBRARY_PATH = lib.makeLibraryPath [
+    libGL
+    libxkbcommon
+    wayland
+  ];
+in
+mkShell {
   shellHook = ''
-    export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH};
+    export LIBCLANG_PATH="${libclang.lib}/lib"
   '';
 
-  nativeBuildInputs = with pkgs; [
+  nativeBuildInputs = [
     pkg-config
   ];
 
-  buildInputs = with pkgs; [
+  buildInputs = [
     glib
     clang
     openssl
-    wayland
     libclang
   ];
 }

@@ -1,140 +1,155 @@
+use crate::egui::theme_color;
 use crate::imports::*;
 use crate::settings::{NodeSettings, RpcKind};
-use crate::egui::theme_color;
 
 pub struct Settings {
     #[allow(dead_code)]
     runtime: Runtime,
-    settings : crate::settings::Settings,
-    wrpc_borsh_network_interface : NetworkInterfaceEditor,
-    wrpc_json_network_interface : NetworkInterfaceEditor,
-    grpc_network_interface : NetworkInterfaceEditor,
-    reset_settings : bool,
-    temp_devnet_url_input: String, // Temporary storage for devnet URL input
+    settings: crate::settings::Settings,
+    wrpc_borsh_network_interface: NetworkInterfaceEditor,
+    wrpc_json_network_interface: NetworkInterfaceEditor,
+    grpc_network_interface: NetworkInterfaceEditor,
+    reset_settings: bool,
 }
 
 impl Settings {
     pub fn new(runtime: Runtime) -> Self {
-        Self { 
+        Self {
             runtime,
-            settings : crate::settings::Settings::default(),
-            wrpc_borsh_network_interface : NetworkInterfaceEditor::default(),
-            wrpc_json_network_interface : NetworkInterfaceEditor::default(),
-            grpc_network_interface : NetworkInterfaceEditor::default(),
-            reset_settings : false,
-            temp_devnet_url_input: String::new(),
+            settings: crate::settings::Settings::default(),
+            wrpc_borsh_network_interface: NetworkInterfaceEditor::default(),
+            wrpc_json_network_interface: NetworkInterfaceEditor::default(),
+            grpc_network_interface: NetworkInterfaceEditor::default(),
+            reset_settings: false,
         }
     }
 
-    pub fn load(&mut self, settings : crate::settings::Settings) {
+    pub fn load(&mut self, settings: crate::settings::Settings) {
         self.settings = settings;
 
-        self.wrpc_borsh_network_interface = NetworkInterfaceEditor::from(&self.settings.node.wrpc_borsh_network_interface);
-        self.wrpc_json_network_interface = NetworkInterfaceEditor::from(&self.settings.node.wrpc_json_network_interface);
-        self.grpc_network_interface = NetworkInterfaceEditor::from(&self.settings.node.grpc_network_interface);
+        self.wrpc_borsh_network_interface =
+            NetworkInterfaceEditor::from(&self.settings.node.wrpc_borsh_network_interface);
+        self.wrpc_json_network_interface =
+            NetworkInterfaceEditor::from(&self.settings.node.wrpc_json_network_interface);
+        self.grpc_network_interface =
+            NetworkInterfaceEditor::from(&self.settings.node.grpc_network_interface);
     }
 
-    pub fn change_current_network(&mut self, network : Network) {
-        // Clear devnet custom URL when switching away from devnet
-        if self.settings.node.network == Network::Devnet && network != Network::Devnet {
-            self.settings.node.devnet_custom_url = None;
-            self.temp_devnet_url_input.clear();
-        }
-        
+    pub fn change_current_network(&mut self, network: Network) {
         self.settings.node.network = network;
     }
 
-    pub fn render_remote_settings(_core: &mut Core, ui: &mut Ui, settings : &mut NodeSettings, grpc_interface_editor: &mut NetworkInterfaceEditor) -> Option<&'static str> {
-
+    pub fn render_remote_settings(
+        _core: &mut Core,
+        ui: &mut Ui,
+        settings: &mut NodeSettings,
+        grpc_interface_editor: &mut NetworkInterfaceEditor,
+    ) -> Option<&'static str> {
         let mut node_settings_error = None;
 
         CollapsingHeader::new(i18n("Remote p2p Node Configuration"))
-        .default_open(true)
-        .show(ui, |ui| {
-
-            // 添加RPC类型选择
-            ui.horizontal_wrapped(|ui|{
-                ui.label(i18n("RPC Type:"));
-                ui.radio_value(&mut settings.rpc_kind, RpcKind::Grpc, "gRPC");
-                ui.radio_value(&mut settings.rpc_kind, RpcKind::Wrpc, "wRPC");
-            });
-
-            ui.horizontal_wrapped(|ui|{
-                ui.label(i18n("Remote Connection:"));
-                NodeConnectionConfigKind::iter().for_each(|kind| {
-                    ui.radio_value(&mut settings.connection_config_kind, *kind, kind.to_string());
+            .default_open(true)
+            .show(ui, |ui| {
+                // 添加RPC类型选择
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(i18n("RPC Type:"));
+                    ui.radio_value(&mut settings.rpc_kind, RpcKind::Grpc, "gRPC");
+                    ui.radio_value(&mut settings.rpc_kind, RpcKind::Wrpc, "wRPC");
                 });
-            });
 
-            match settings.connection_config_kind {
-                NodeConnectionConfigKind::Custom => {
-                    match settings.rpc_kind {
-                        RpcKind::Grpc => {
-                            // 显示gRPC连接设置
-                            CollapsingHeader::new(i18n("gRPC Connection Settings"))
-                                .default_open(true)
-                                .show(ui, |ui| {
-                                                                        // 使用NetworkInterfaceEditor来编辑gRPC接口
-                                    grpc_interface_editor.ui(ui);
-                                    
-                                    // 同步编辑器内容到设置
-                                    if let Ok(new_interface) = NetworkInterfaceConfig::try_from(grpc_interface_editor as &NetworkInterfaceEditor) {
-                                        settings.grpc_network_interface = new_interface;
-                                    }
-                                    
-                                    // 显示当前gRPC配置
-                                    ui.label(format!("当前gRPC配置: {}", settings.grpc_network_interface.custom));
-                                    
-                                    // 对于devnet，显示远程节点地址
-                                    if settings.network == Network::Devnet {
-                                        ui.label(RichText::new("Devnet远程节点: 8.210.45.192:16610").color(theme_color().strong_color));
-                                    }
-                                });
-                        },
-                        RpcKind::Wrpc => {
-                            // 显示wRPC连接设置
-                            CollapsingHeader::new(i18n("wRPC Connection Settings"))
-                                .default_open(true)
-                                .show(ui, |ui| {
-                                    ui.horizontal(|ui|{
-                                        ui.label(i18n("wRPC Encoding:"));
-                                        WrpcEncoding::iter().for_each(|encoding| {
-                                            ui.radio_value(&mut settings.wrpc_encoding, *encoding, encoding.to_string());
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(i18n("Remote Connection:"));
+                    NodeConnectionConfigKind::iter().for_each(|kind| {
+                        ui.radio_value(
+                            &mut settings.connection_config_kind,
+                            *kind,
+                            kind.to_string(),
+                        );
+                    });
+                });
+
+                match settings.connection_config_kind {
+                    NodeConnectionConfigKind::Custom => {
+                        match settings.rpc_kind {
+                            RpcKind::Grpc => {
+                                // 显示gRPC连接设置
+                                CollapsingHeader::new(i18n("gRPC Connection Settings"))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        // 使用NetworkInterfaceEditor来编辑gRPC接口
+                                        grpc_interface_editor.ui(ui);
+
+                                        // 同步编辑器内容到设置
+                                        if let Ok(new_interface) = NetworkInterfaceConfig::try_from(
+                                            grpc_interface_editor as &NetworkInterfaceEditor,
+                                        ) {
+                                            settings.grpc_network_interface = new_interface;
+                                        }
+
+                                        // 显示当前gRPC配置
+                                        ui.label(format!(
+                                            "当前gRPC配置: {}",
+                                            settings.grpc_network_interface.custom
+                                        ));
+
+                                        // 对于devnet，显示远程节点地址
+                                        if settings.network == Network::Devnet {
+                                            ui.label(
+                                                RichText::new("Devnet远程节点: 8.210.45.192:16610")
+                                                    .color(theme_color().strong_color),
+                                            );
+                                        }
+                                    });
+                            }
+                            RpcKind::Wrpc => {
+                                // 显示wRPC连接设置
+                                CollapsingHeader::new(i18n("wRPC Connection Settings"))
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label(i18n("wRPC Encoding:"));
+                                            WrpcEncoding::iter().for_each(|encoding| {
+                                                ui.radio_value(
+                                                    &mut settings.wrpc_encoding,
+                                                    *encoding,
+                                                    encoding.to_string(),
+                                                );
+                                            });
                                         });
-                                    });
 
-                                    ui.horizontal(|ui|{
-                                        ui.label(i18n("wRPC URL:"));
-                                        ui.add(TextEdit::singleline(&mut settings.wrpc_url));
-                                    });
+                                        ui.horizontal(|ui| {
+                                            ui.label(i18n("wRPC URL:"));
+                                            ui.add(TextEdit::singleline(&mut settings.wrpc_url));
+                                        });
 
-                                    if let Err(err) = TondiRpcClient::parse_url(settings.wrpc_url.clone(), settings.wrpc_encoding, settings.network.into()) {
-                                        ui.label(
-                                            RichText::new(err.to_string())
-                                                .color(theme_color().warning_color),
-                                        );
-                                        node_settings_error = Some(i18n("Invalid wRPC URL"));
-                                    }
-                                });
+                                        if let Err(err) = TondiRpcClient::parse_url(
+                                            settings.wrpc_url.clone(),
+                                            settings.wrpc_encoding,
+                                            settings.network.into(),
+                                        ) {
+                                            ui.label(
+                                                RichText::new(err.to_string())
+                                                    .color(theme_color().warning_color),
+                                            );
+                                            node_settings_error = Some(i18n("Invalid wRPC URL"));
+                                        }
+                                    });
+                            }
                         }
                     }
-                },
-                NodeConnectionConfigKind::PublicServerCustom => {
-                },
-                NodeConnectionConfigKind::PublicServerRandom => {
-                    ui.label(i18n("A random node will be selected on startup"));
-                },
-            }
-
-        });
+                    NodeConnectionConfigKind::PublicServerCustom => {}
+                    NodeConnectionConfigKind::PublicServerRandom => {
+                        ui.label(i18n("A random node will be selected on startup"));
+                    }
+                }
+            });
 
         node_settings_error
     }
 }
 
 impl ModuleT for Settings {
-
-    fn init(&mut self, wallet : &mut Core) {
+    fn init(&mut self, wallet: &mut Core) {
         self.load(wallet.settings.clone());
     }
 
@@ -152,7 +167,7 @@ impl ModuleT for Settings {
         ScrollArea::vertical()
             .auto_shrink([false, true])
             .show(ui, |ui| {
-                self.render_settings(core,ui);
+                self.render_settings(core, ui);
             });
     }
 
@@ -166,24 +181,10 @@ impl ModuleT for Settings {
         self.settings.node.network = network;
         core.store_settings();
     }
-
 }
 
 impl Settings {
-
-    fn render_node_settings(
-        &mut self,
-        core: &mut Core,
-        ui: &mut egui::Ui,
-    ) {
-        // Sync settings from core to ensure we have the latest values
-        if self.settings.node.network != core.settings.node.network {
-            self.settings.node.network = core.settings.node.network;
-        }
-        if self.settings.node.devnet_custom_url != core.settings.node.devnet_custom_url {
-            self.settings.node.devnet_custom_url = core.settings.node.devnet_custom_url.clone();
-        }
-        
+    fn render_node_settings(&mut self, core: &mut Core, ui: &mut egui::Ui) {
         #[allow(unused_variables)]
         let half_width = ui.ctx().screen_rect().width() * 0.5;
 
@@ -207,7 +208,7 @@ impl Settings {
                                 }
                             });
                         });
-                        
+
                         // 显示当前网络的端口信息
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
@@ -219,53 +220,6 @@ impl Settings {
                                 ui.label(format!("wRPC: {}", self.settings.node.wrpc_borsh_network_interface.custom));
                             }
                         });
-                        
-                        // Devnet custom URL configuration
-                        if self.settings.node.network == Network::Devnet {
-                            ui.add_space(8.0);
-                            
-                            // Show current URL from settings
-                            if let Some(url) = &self.settings.node.devnet_custom_url {
-                                if !url.is_empty() {
-                                    let url_clone = url.clone(); // Clone to avoid borrowing issues
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("{}: {}", i18n("Current URL"), url_clone));
-                                        if ui.button(i18n("Clear URL")).clicked() {
-                                            self.settings.node.devnet_custom_url = None;
-                                            core.settings.node.devnet_custom_url = None;
-                                            core.store_settings();
-                                        }
-                                    });
-                                }
-                            }
-                            
-                            // Format hint
-                            ui.colored_label(
-                                theme_color().warning_color,
-                                i18n("Format: hostname:port (e.g., 127.0.0.1:16610 for gRPC, 127.0.0.1:17610 for wRPC)")
-                            );
-                            
-                            // Input field for new URL
-                            ui.horizontal(|ui| {
-                                ui.label(i18n("New URL:"));
-                                if ui.add(TextEdit::singleline(&mut self.temp_devnet_url_input)).changed() {
-                                    // Input is automatically stored in the persistent field
-                                }
-                                
-                                // Apply button
-                                if !self.temp_devnet_url_input.is_empty() {
-                                    if ui.button(i18n("Apply")).clicked() {
-                                        self.settings.node.devnet_custom_url = Some(self.temp_devnet_url_input.clone());
-                                        core.settings.node.devnet_custom_url = Some(self.temp_devnet_url_input.clone());
-                                        core.store_settings();
-                                        // Clear the input field after applying
-                                        self.temp_devnet_url_input.clear();
-                                    }
-                                }
-                            });
-                            
-                            ui.label(i18n("Leave empty to use default devnet configuration"));
-                        }
                     });
 
 
@@ -477,7 +431,7 @@ impl Settings {
 
                                 });
                             // });
-                            
+
                                 CollapsingHeader::new(i18n("p2p RPC"))
                                     .default_open(true)
                                     .show(ui, |ui| {
@@ -491,69 +445,61 @@ impl Settings {
 
             }); // Tondi p2p Network & Node Connection
 
-            if let Some(error) = node_settings_error {
-                ui.add_space(4.);
-                ui.label(
-                    RichText::new(error)
-                        .color(theme_color().error_color),
-                );
-                ui.add_space(4.);
-                ui.label(i18n("Unable to change node settings until the problem is resolved"));
+        if let Some(error) = node_settings_error {
+            ui.add_space(4.);
+            ui.label(RichText::new(error).color(theme_color().error_color));
+            ui.add_space(4.);
+            ui.label(i18n(
+                "Unable to change node settings until the problem is resolved",
+            ));
 
-                ui.add_space(8.);
+            ui.add_space(8.);
 
-                if let Some(response) = ui.confirm_medium_cancel(Align::Max) {
-                    if matches!(response, Confirm::Nack) {
-                        self.settings.node = core.settings.node.clone();
-                        self.grpc_network_interface = NetworkInterfaceEditor::from(&self.settings.node.grpc_network_interface);
-                    }
-                }
-
-                ui.separator();
-
-            } else if node_settings_error.is_none() {
-                if let Some(restart) = self.settings.node.compare(&core.settings.node) {
-
-                    ui.add_space(16.);
-                    if let Some(response) = ui.confirm_medium_apply_cancel(Align::Max) {
-                        match response {
-                            Confirm::Ack => {
-
-                                core.settings = self.settings.clone();
-                                core.settings.store_sync().unwrap();
-
-                                cfg_if! {
-                                    if #[cfg(not(target_arch = "wasm32"))] {
-                                        let storage_root = core.settings.node.tondid_daemon_storage_folder_enable.then_some(core.settings.node.tondid_daemon_storage_folder.as_str());
-                                        core.storage.track_storage_root(storage_root);
-                                    }
-                                }
-
-                                if restart {
-                                    self.runtime.tondi_service().update_services(&self.settings.node, None);
-                                }
-                            },
-                            Confirm::Nack => {
-                                self.settings = core.settings.clone();
-                                self.grpc_network_interface = NetworkInterfaceEditor::from(&self.settings.node.grpc_network_interface);
-                            }
-                        }
-                    }
-                    ui.separator();
+            if let Some(response) = ui.confirm_medium_cancel(Align::Max) {
+                if matches!(response, Confirm::Nack) {
+                    self.settings.node = core.settings.node.clone();
+                    self.grpc_network_interface =
+                        NetworkInterfaceEditor::from(&self.settings.node.grpc_network_interface);
                 }
             }
+
+            ui.separator();
+        } else if node_settings_error.is_none() {
+            if let Some(restart) = self.settings.node.compare(&core.settings.node) {
+                ui.add_space(16.);
+                if let Some(response) = ui.confirm_medium_apply_cancel(Align::Max) {
+                    match response {
+                        Confirm::Ack => {
+                            core.settings = self.settings.clone();
+                            core.settings.store_sync().unwrap();
+
+                            cfg_if! {
+                                if #[cfg(not(target_arch = "wasm32"))] {
+                                    let storage_root = core.settings.node.tondid_daemon_storage_folder_enable.then_some(core.settings.node.tondid_daemon_storage_folder.as_str());
+                                    core.storage.track_storage_root(storage_root);
+                                }
+                            }
+
+                            if restart {
+                                self.runtime
+                                    .tondi_service()
+                                    .update_services(&self.settings.node, None);
+                            }
+                        }
+                        Confirm::Nack => {
+                            self.settings = core.settings.clone();
+                            self.grpc_network_interface = NetworkInterfaceEditor::from(
+                                &self.settings.node.grpc_network_interface,
+                            );
+                        }
+                    }
+                }
+                ui.separator();
+            }
+        }
     }
 
-
-
-
-    fn render_ui_settings(
-        &mut self,
-        core: &mut Core,
-        ui: &mut egui::Ui,
-    ) {
-
-
+    fn render_ui_settings(&mut self, core: &mut Core, ui: &mut egui::Ui) {
         CollapsingHeader::new(i18n("User Interface"))
             .default_open(false)
             .show(ui, |ui| {
@@ -689,29 +635,30 @@ impl Settings {
                             }
                         }
             });
-
     }
 
-    fn render_settings(
-        &mut self,
-        core: &mut Core,
-        ui: &mut egui::Ui,
-    ) {
+    fn render_settings(&mut self, core: &mut Core, ui: &mut egui::Ui) {
+        self.render_node_settings(core, ui);
 
-        self.render_node_settings(core,ui);
-
-        self.render_ui_settings(core,ui);
+        self.render_ui_settings(core, ui);
 
         CollapsingHeader::new(i18n("Services"))
             .default_open(true)
             .show(ui, |ui| {
-
                 CollapsingHeader::new(i18n("Market Monitor"))
                     .default_open(true)
                     .show(ui, |ui| {
-                        if ui.checkbox(&mut self.settings.market_monitor, i18n("Enable Market Monitor")).changed() {
+                        if ui
+                            .checkbox(
+                                &mut self.settings.market_monitor,
+                                i18n("Enable Market Monitor"),
+                            )
+                            .changed()
+                        {
                             core.settings.market_monitor = self.settings.market_monitor;
-                            self.runtime.market_monitor_service().enable(core.settings.market_monitor);
+                            self.runtime
+                                .market_monitor_service()
+                                .enable(core.settings.market_monitor);
                             core.store_settings();
                         }
                     });
@@ -720,61 +667,89 @@ impl Settings {
                 CollapsingHeader::new(i18n("Check for Updates"))
                     .default_open(true)
                     .show(ui, |ui| {
-                        if ui.checkbox(&mut self.settings.update_monitor, i18n("Check for Software Updates on GitHub")).changed() {
+                        if ui
+                            .checkbox(
+                                &mut self.settings.update_monitor,
+                                i18n("Check for Software Updates on GitHub"),
+                            )
+                            .changed()
+                        {
                             core.settings.update_monitor = self.settings.update_monitor;
-                            self.runtime.update_monitor_service().enable(core.settings.update_monitor);
+                            self.runtime
+                                .update_monitor_service()
+                                .enable(core.settings.update_monitor);
                             core.store_settings();
                         }
-                        
+
                         // 添加超时设置
                         ui.add_space(5.0);
                         ui.label(i18n("Update Check Timeout (seconds):"));
-                        if ui.add(egui::DragValue::new(&mut self.settings.update_check_timeout)
-                            .range(10..=120)
-                            .speed(1.0)).changed() {
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut self.settings.update_check_timeout)
+                                    .range(10..=120)
+                                    .speed(1.0),
+                            )
+                            .changed()
+                        {
                             core.settings.update_check_timeout = self.settings.update_check_timeout;
                             core.store_settings();
                         }
-                        
+
                         // 添加重试次数设置
                         ui.add_space(5.0);
                         ui.label(i18n("Update Check Retries:"));
-                        if ui.add(egui::DragValue::new(&mut self.settings.update_check_retries)
-                            .range(1..=5)
-                            .speed(1.0)).changed() {
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut self.settings.update_check_retries)
+                                    .range(1..=5)
+                                    .speed(1.0),
+                            )
+                            .changed()
+                        {
                             core.settings.update_check_retries = self.settings.update_check_retries;
                             core.store_settings();
                         }
-                        
+
                         // 添加检查间隔设置
                         ui.add_space(5.0);
                         ui.label(i18n("Update Check Interval (hours):"));
                         let mut interval_hours = self.settings.update_check_interval / 3600;
-                        if ui.add(egui::DragValue::new(&mut interval_hours)
-                            .range(1..=168) // 1小时到1周
-                            .speed(1.0)).changed() {
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut interval_hours)
+                                    .range(1..=168) // 1小时到1周
+                                    .speed(1.0),
+                            )
+                            .changed()
+                        {
                             self.settings.update_check_interval = interval_hours * 3600;
-                            core.settings.update_check_interval = self.settings.update_check_interval;
+                            core.settings.update_check_interval =
+                                self.settings.update_check_interval;
                             core.store_settings();
                         }
-                    });    
+                    });
             });
 
         CollapsingHeader::new(i18n("Network Fee Estimator"))
             .default_open(false)
             .show(ui, |ui| {
-                ui.vertical(|ui|{
+                ui.vertical(|ui| {
                     EstimatorMode::iter().for_each(|kind| {
-                        ui.radio_value(&mut self.settings.estimator.mode, *kind, i18n(kind.describe()));
+                        ui.radio_value(
+                            &mut self.settings.estimator.mode,
+                            *kind,
+                            i18n(kind.describe()),
+                        );
                     });
-                    
+
                     if self.settings.estimator.mode != core.settings.estimator.mode {
                         core.settings.estimator.mode = self.settings.estimator.mode;
                         core.store_settings();
                     }
                 });
             });
-            
+
         #[cfg(not(target_arch = "wasm32"))]
         core.storage.clone().render_settings(core, ui);
 
@@ -797,29 +772,29 @@ impl Settings {
 
                         #[cfg(not(target_arch = "wasm32"))]
                         ui.checkbox(
-                            &mut self.settings.developer.enable_experimental_features, 
+                            &mut self.settings.developer.enable_experimental_features,
                             i18n("Enable experimental features")
                         ).on_hover_text_at_pointer(
                             i18n("Enables features currently in development")
                         );
-                        
+
                         #[cfg(not(target_arch = "wasm32"))]
                         ui.checkbox(
-                            &mut self.settings.developer.enable_custom_daemon_args, 
+                            &mut self.settings.developer.enable_custom_daemon_args,
                             i18n("Enable custom daemon arguments")
                         ).on_hover_text_at_pointer(
                             i18n("Allow custom arguments for the Tondi Client daemon")
                         );
-                        
+
                         ui.checkbox(
-                            &mut self.settings.developer.disable_password_restrictions, 
+                            &mut self.settings.developer.disable_password_restrictions,
                             i18n("Disable password safety rules")
                         ).on_hover_text_at_pointer(
                             i18n("Removes security restrictions, allows for single-letter passwords")
                         );
-                        
+
                         ui.checkbox(
-                            &mut self.settings.developer.market_monitor_on_testnet, 
+                            &mut self.settings.developer.market_monitor_on_testnet,
                             i18n("Show balances in alternate currencies for testnet coins")
                         ).on_hover_text_at_pointer(
                             i18n("Shows balances in alternate currencies (BTC, USD) when using testnet coins as if you are on mainnet")
@@ -827,7 +802,7 @@ impl Settings {
 
                         #[cfg(not(target_arch = "wasm32"))]
                         ui.checkbox(
-                            &mut self.settings.developer.enable_screen_capture, 
+                            &mut self.settings.developer.enable_screen_capture,
                             i18n("Enable screen capture")
                         ).on_hover_text_at_pointer(
                             i18n("Allows you to take screenshots from within the application")
@@ -896,4 +871,3 @@ impl Settings {
             });
     }
 }
-

@@ -77,13 +77,21 @@ impl TondidNodeKind {
             TondidNodeKind::Disable => i18n("Disables node connectivity (Offline Mode)."),
             TondidNodeKind::Remote => i18n("Connects to a Remote Tondi Client Node via wRPC."),
             #[cfg(not(target_arch = "wasm32"))]
-            TondidNodeKind::IntegratedInProc => i18n("The node runs as a part of the Tondi Dashboard application process. This reduces communication overhead (experimental)."),
+            TondidNodeKind::IntegratedInProc => i18n(
+                "The node runs as a part of the Tondi Dashboard application process. This reduces communication overhead (experimental).",
+            ),
             #[cfg(not(target_arch = "wasm32"))]
-            TondidNodeKind::IntegratedAsDaemon => i18n("The node is spawned as a child daemon process (recommended)."),
+            TondidNodeKind::IntegratedAsDaemon => {
+                i18n("The node is spawned as a child daemon process (recommended).")
+            }
             #[cfg(not(target_arch = "wasm32"))]
-            TondidNodeKind::IntegratedAsPassiveSync => i18n("The node synchronizes in the background while Tondi Dashboard is connected to a public node. Once the node is synchronized, you can switch to the 'Integrated Daemon' mode."),
+            TondidNodeKind::IntegratedAsPassiveSync => i18n(
+                "The node synchronizes in the background while Tondi Dashboard is connected to a public node. Once the node is synchronized, you can switch to the 'Integrated Daemon' mode.",
+            ),
             #[cfg(not(target_arch = "wasm32"))]
-            TondidNodeKind::ExternalAsDaemon => i18n("A binary at another location is spawned a child process (experimental, for development purposes only)."),
+            TondidNodeKind::ExternalAsDaemon => i18n(
+                "A binary at another location is spawned a child process (experimental, for development purposes only).",
+            ),
         }
     }
 
@@ -383,55 +391,31 @@ pub struct NodeSettings {
     pub tondid_daemon_storage_folder_enable: bool,
     #[serde(default)]
     pub tondid_daemon_storage_folder: String,
-    #[serde(default)]
-    pub devnet_custom_url: Option<String>,
 }
 
 impl Default for NodeSettings {
     fn default() -> Self {
-        // 使用带端口的默认配置，便于连接本地或远程节点
-        let default_grpc_interface = if cfg!(target_arch = "wasm32") {
-            // Web版本使用本地地址
-            NetworkInterfaceConfig {
-                kind: NetworkInterfaceKind::Custom,
-                custom: "127.0.0.1:16610".parse().unwrap(),
-            }
-        } else {
-            // 桌面版本，Devnet默认使用远程节点
-            NetworkInterfaceConfig {
-                kind: NetworkInterfaceKind::Custom,
-                custom: "8.210.45.192:16610".parse().unwrap(), // 默认连接到远程devnet节点
-            }
-        };
-        
-
-
-        let settings = Self {
-            connection_config_kind: NodeConnectionConfigKind::Custom,  // 改为Custom以启用自定义RPC配置
-            rpc_kind: RpcKind::Grpc,  // 默认使用gRPC而不是Wrpc
+        Self {
+            connection_config_kind: NodeConnectionConfigKind::default(),
+            rpc_kind: RpcKind::Wrpc,
             wrpc_url: "127.0.0.1".to_string(),
             wrpc_encoding: WrpcEncoding::Borsh,
             enable_wrpc_borsh: false,
             wrpc_borsh_network_interface: NetworkInterfaceConfig::default(),
             enable_wrpc_json: false,
             wrpc_json_network_interface: NetworkInterfaceConfig::default(),
-            enable_grpc: true,  // 默认启用gRPC
-            grpc_network_interface: default_grpc_interface,
+            enable_grpc: false,
+            grpc_network_interface: NetworkInterfaceConfig::default(),
             enable_upnp: true,
             memory_scale: NodeMemoryScale::default(),
-            network: Network::Devnet,  // 改为Devnet
-            node_kind: TondidNodeKind::Remote,  // 改为Remote以连接远程节点
+            network: Network::default(),
+            node_kind: TondidNodeKind::Remote, // 改为Remote以连接远程节点
             tondid_daemon_binary: String::default(),
             tondid_daemon_args: String::default(),
             tondid_daemon_args_enable: false,
             tondid_daemon_storage_folder_enable: false,
             tondid_daemon_storage_folder: String::default(),
-            devnet_custom_url: Some("https://8.210.45.192/".to_string()),  // 设置远程devnet地址
-        };
-        
-
-        
-        settings
+        }
     }
 }
 
@@ -440,8 +424,11 @@ impl NodeSettings {
     pub fn update_ports_for_network(&mut self) {
         println!("[UPDATE PORTS DEBUG] update_ports_for_network 被调用");
         println!("[UPDATE PORTS DEBUG] self.network: {:?}", self.network);
-        println!("[UPDATE PORTS DEBUG] 调用前 grpc_network_interface: {:?}", self.grpc_network_interface);
-        
+        println!(
+            "[UPDATE PORTS DEBUG] 调用前 grpc_network_interface: {:?}",
+            self.grpc_network_interface
+        );
+
         match self.network {
             Network::Mainnet => {
                 // Mainnet: gRPC 16110, wRPC 17110
@@ -479,18 +466,19 @@ impl NodeSettings {
                     // 对于devnet，默认连接到远程节点
                     self.grpc_network_interface.kind = NetworkInterfaceKind::Custom;
                     self.grpc_network_interface.custom = "8.210.45.192:16610".parse().unwrap();
-                    
+
                     if self.enable_wrpc_borsh {
                         self.wrpc_borsh_network_interface.kind = NetworkInterfaceKind::Custom;
-                        self.wrpc_borsh_network_interface.custom = "8.210.45.192:17610".parse().unwrap();
+                        self.wrpc_borsh_network_interface.custom =
+                            "8.210.45.192:17610".parse().unwrap();
                     }
                     if self.enable_wrpc_json {
                         self.wrpc_json_network_interface.kind = NetworkInterfaceKind::Custom;
-                        self.wrpc_json_network_interface.custom = "8.210.45.192:18610".parse().unwrap();
+                        self.wrpc_json_network_interface.custom =
+                            "8.210.45.192:18610".parse().unwrap();
                     }
                 }
             }
-
         }
     }
 
@@ -526,8 +514,6 @@ impl NodeSettings {
                     Some(self.node_kind.is_config_capable())
                 } else if self.tondid_daemon_binary != other.tondid_daemon_binary {
                     Some(self.node_kind == TondidNodeKind::ExternalAsDaemon)
-                } else if self.devnet_custom_url != other.devnet_custom_url {
-                    Some(true)
                 } else {
                     None
                 }
@@ -545,8 +531,6 @@ impl NodeSettings {
                     || self.wrpc_url != other.wrpc_url
                     || self.wrpc_encoding != other.wrpc_encoding
                 {
-                    Some(true)
-                } else if self.devnet_custom_url != other.devnet_custom_url {
                     Some(true)
                 } else {
                     None
@@ -726,8 +710,8 @@ pub struct Settings {
     pub update_check_timeout: u64, // 更新检查超时时间（秒）
     pub update_check_retries: u32, // 更新检查重试次数
     pub update_check_interval: u64, // 更新检查间隔（秒）
-    // #[serde(default)]
-    // pub disable_frame: bool,
+                                   // #[serde(default)]
+                                   // pub disable_frame: bool,
 }
 
 impl Default for Settings {
@@ -749,7 +733,7 @@ impl Default for Settings {
             update_check_timeout: 30, // 默认30秒超时
             update_check_retries: 3,  // 默认3次重试
             update_check_interval: 60 * 60 * 12, // 默认12小时检查一次
-            // disable_frame: false,
+                                      // disable_frame: false,
         }
     }
 }
@@ -789,6 +773,7 @@ impl Settings {
 
         let storage = storage()?;
         if storage.exists().await.unwrap_or(false) {
+            log_info!("== Load Storage Setting ==");
             match read_json::<Self>(storage.filename()).await {
                 Ok(mut settings) => {
                     if settings.revision != SETTINGS_REVISION {
@@ -818,6 +803,7 @@ impl Settings {
                 }
             }
         } else {
+            log_info!("== Init Default Setting ==");
             Ok(Self::default())
         }
     }
@@ -830,31 +816,58 @@ mod tests {
     #[test]
     fn test_update_ports_for_network() {
         let mut settings = NodeSettings::default();
-        
+
         // 启用所有 RPC 类型以便测试
         settings.enable_grpc = true;
         settings.enable_wrpc_borsh = true;
         settings.enable_wrpc_json = true;
-        
+
         // 测试 Mainnet 端口
         settings.network = Network::Mainnet;
         settings.update_ports_for_network();
-        assert_eq!(settings.grpc_network_interface.custom.to_string(), "127.0.0.1:16110");
-        assert_eq!(settings.wrpc_borsh_network_interface.custom.to_string(), "127.0.0.1:17110");
-        assert_eq!(settings.wrpc_json_network_interface.custom.to_string(), "127.0.0.1:18110");
-        
+        assert_eq!(
+            settings.grpc_network_interface.custom.to_string(),
+            "127.0.0.1:16110"
+        );
+        assert_eq!(
+            settings.wrpc_borsh_network_interface.custom.to_string(),
+            "127.0.0.1:17110"
+        );
+        assert_eq!(
+            settings.wrpc_json_network_interface.custom.to_string(),
+            "127.0.0.1:18110"
+        );
+
         // 测试 Testnet 端口
         settings.network = Network::Testnet;
         settings.update_ports_for_network();
-        assert_eq!(settings.grpc_network_interface.custom.to_string(), "127.0.0.1:16210");
-        assert_eq!(settings.wrpc_borsh_network_interface.custom.to_string(), "127.0.0.1:17210");
-        assert_eq!(settings.wrpc_json_network_interface.custom.to_string(), "127.0.0.1:18210");
-        
+        assert_eq!(
+            settings.grpc_network_interface.custom.to_string(),
+            "127.0.0.1:16210"
+        );
+        assert_eq!(
+            settings.wrpc_borsh_network_interface.custom.to_string(),
+            "127.0.0.1:17210"
+        );
+        assert_eq!(
+            settings.wrpc_json_network_interface.custom.to_string(),
+            "127.0.0.1:18210"
+        );
+
         // 测试 Devnet 端口
         settings.network = Network::Devnet;
         settings.update_ports_for_network();
-        assert_eq!(settings.grpc_network_interface.custom.to_string(), "8.210.45.192:16610");
-        assert_eq!(settings.wrpc_borsh_network_interface.custom.to_string(), "8.210.45.192:17610");
-        assert_eq!(settings.wrpc_json_network_interface.custom.to_string(), "8.210.45.192:18610");
+        assert_eq!(
+            settings.grpc_network_interface.custom.to_string(),
+            "8.210.45.192:16610"
+        );
+        assert_eq!(
+            settings.wrpc_borsh_network_interface.custom.to_string(),
+            "8.210.45.192:17610"
+        );
+        assert_eq!(
+            settings.wrpc_json_network_interface.custom.to_string(),
+            "8.210.45.192:18610"
+        );
     }
 }

@@ -29,21 +29,26 @@ pub struct Config {
     #[allow(dead_code)]
     enable_wrpc_json: bool,
     enable_grpc: bool,
-    pub grpc_network_interface: NetworkInterfaceConfig,  // 改为公有
+    pub grpc_network_interface: NetworkInterfaceConfig, // 改为公有
     tondid_daemon_args_enable: bool,
     tondid_daemon_args: String,
     tondid_daemon_storage_folder_enable: bool,
     tondid_daemon_storage_folder: String,
     memory_scale: NodeMemoryScale,
-    devnet_custom_url: Option<String>,
 }
 
 impl From<NodeSettings> for Config {
     fn from(node_settings: NodeSettings) -> Self {
         println!("[CONFIG DEBUG] Config::from(NodeSettings) 被调用");
-        println!("[CONFIG DEBUG] NodeSettings.network: {:?}", node_settings.network);
-        println!("[CONFIG DEBUG] NodeSettings.grpc_network_interface: {:?}", node_settings.grpc_network_interface);
-        
+        println!(
+            "[CONFIG DEBUG] NodeSettings.network: {:?}",
+            node_settings.network
+        );
+        println!(
+            "[CONFIG DEBUG] NodeSettings.grpc_network_interface: {:?}",
+            node_settings.grpc_network_interface
+        );
+
         let config = Self {
             network: node_settings.network,
             enable_upnp: node_settings.enable_upnp,
@@ -56,10 +61,12 @@ impl From<NodeSettings> for Config {
             tondid_daemon_storage_folder_enable: node_settings.tondid_daemon_storage_folder_enable,
             tondid_daemon_storage_folder: node_settings.tondid_daemon_storage_folder,
             memory_scale: node_settings.memory_scale,
-            devnet_custom_url: node_settings.devnet_custom_url,
         };
-        
-        println!("[CONFIG DEBUG] 生成的Config.grpc_network_interface: {:?}", config.grpc_network_interface);
+
+        println!(
+            "[CONFIG DEBUG] 生成的Config.grpc_network_interface: {:?}",
+            config.grpc_network_interface
+        );
         config
     }
 }
@@ -84,7 +91,6 @@ impl Config {
             tondid_daemon_storage_folder_enable: false,
             tondid_daemon_storage_folder: String::default(),
             memory_scale: NodeMemoryScale::default(),
-            devnet_custom_url: None,
         }
     }
 }
@@ -120,15 +126,6 @@ cfg_if! {
                 }
 
                 args.user_agent_comments = vec![user_agent_comment()];
-
-                // Add custom devnet URL if specified
-                if let Some(custom_url) = &config.devnet_custom_url {
-                    if !custom_url.is_empty() {
-                        // Add the custom URL as a command line argument
-                        // This will be parsed by tondid to connect to the custom devnet node
-                        args.user_agent_comments.push(format!("devnet-url:{}", custom_url));
-                    }
-                }
 
                 // TODO - parse custom args and overlap on top of the defaults
 
@@ -181,14 +178,6 @@ cfg_if! {
                 }
 
                 args.push(format!("--uacomment={}", user_agent_comment()));
-
-                // Add custom devnet URL if specified
-                if let Some(custom_url) = &config.devnet_custom_url {
-                    if !custom_url.is_empty() {
-                        // Add the custom URL as a command line argument
-                        args.push(format!("--uacomment=devnet-url:{}", custom_url));
-                    }
-                }
 
                 if config.tondid_daemon_storage_folder_enable && !config.tondid_daemon_storage_folder.is_empty() && !(config.tondid_daemon_args_enable && config.tondid_daemon_args.contains("--appdir")) {
                     args.push(format!("--appdir={}", config.tondid_daemon_storage_folder));

@@ -48,6 +48,9 @@ trunk build
 # Build Chrome extension
 cd ../extensions/chrome
 cargo build --target wasm32-unknown-unknown --release
+
+# Build Win
+cargo build --release --target x86_64-pc-windows-gnu
 ```
 
 ### Running the Application

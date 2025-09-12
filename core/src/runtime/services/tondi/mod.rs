@@ -1,6 +1,7 @@
 use crate::imports::*;
 use crate::runtime::Service;
-pub use futures::{future::FutureExt, select, Future};
+pub use futures::{Future, future::FutureExt, select};
+use std::time::Duration;
 use tondi_wallet_core::api::*;
 use tondi_wallet_core::events::Events as CoreWalletEvents;
 #[allow(unused_imports)]
@@ -9,14 +10,11 @@ use tondi_wallet_core::rpc::{
 };
 use tondi_wrpc_client::Resolver;
 use workflow_core::runtime;
-use std::time::Duration;
-
 
 const ENABLE_PREEMPTIVE_DISCONNECT: bool = true;
 
 cfg_if! {
     if #[cfg(not(target_arch = "wasm32"))] {
-        #[cfg(not(target_arch = "wasm32"))]
         use tondi_rpc_service::service::RpcCoreService;
 
         const LOG_BUFFER_LINES: usize = 4096;
@@ -24,9 +22,13 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(not(target_arch = "wasm32"))] {
 // Add gRPC client module
 pub mod grpc_client;
 pub use grpc_client::TondiGrpcClient;
+    }
+}
 
 cfg_if! {
     if #[cfg(not(target_arch = "wasm32"))] {
@@ -126,14 +128,7 @@ impl TondiService {
         }
 
         Self {
-            // 对于devnet，总是尝试启动连接
-            connect_on_startup: if settings.node.network == Network::Devnet {
-                // 对于devnet，使用配置中的设置
-                Some(settings.node.clone())
-            } else {
-                // 对于其他网络，使用原有逻辑
-                settings.initialized.then(|| settings.node.clone())
-            },
+            connect_on_startup: settings.initialized.then(|| settings.node.clone()),
             application_events,
             service_events,
             task_ctl: Channel::oneshot(),
@@ -171,25 +166,28 @@ impl TondiService {
     }
 
     pub async fn create_rpc_client(config: &RpcConfig, network: Network) -> Result<Rpc> {
-        println!("[TONDI SERVICE] create_rpc_client 被调用");
-        println!("[TONDI SERVICE] config: {:?}", config);
-        println!("[TONDI SERVICE] network: {:?}", network);
-        
+        log_info!("[TONDI SERVICE] create_rpc_client 被调用");
+        log_info!("[TONDI SERVICE] config: {:?}", config);
+        log_info!("[TONDI SERVICE] network: {:?}", network);
+
         // 打印调用栈信息（简化版本）
-        println!("[TONDI SERVICE] 调用来源检查...");
-        if let RpcConfig::Grpc { url: Some(net_config) } = config {
-            println!("[TONDI SERVICE] NetworkInterfaceConfig详细信息:");
-            println!("[TONDI SERVICE]   kind: {:?}", net_config.kind);
-            println!("[TONDI SERVICE]   custom: {:?}", net_config.custom);
+        log_info!("[TONDI SERVICE] 调用来源检查...");
+        if let RpcConfig::Grpc {
+            url: Some(net_config),
+        } = config
+        {
+            log_info!("[TONDI SERVICE] NetworkInterfaceConfig详细信息:");
+            log_info!("[TONDI SERVICE]   kind: {:?}", net_config.kind);
+            log_info!("[TONDI SERVICE]   custom: {:?}", net_config.custom);
         }
-        
+
         match config {
             RpcConfig::Wrpc {
                 url,
                 encoding,
                 resolver_urls,
             } => {
-                println!("[TONDI SERVICE] 使用wRPC配置");
+                log_info!("[TONDI SERVICE] 使用wRPC配置");
                 let resolver_or_none = match url {
                     Some(_) => None,
                     None => {
@@ -221,7 +219,7 @@ impl TondiService {
                 Ok(Rpc::new(rpc_api, rpc_ctl))
             }
             RpcConfig::Grpc { url } => {
-                println!("[TONDI SERVICE] 使用gRPC配置");
+                log_info!("[TONDI SERVICE] 使用gRPC配置");
                 cfg_if! {
                     if #[cfg(not(target_arch = "wasm32"))] {
                         // Desktop version: supports gRPC
@@ -280,7 +278,9 @@ impl TondiService {
                         .is_ok()
                     {
                         wallet.rpc_ctl().signal_open().await?;
-                    } else if let Ok(_grpc_client) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
+                    } else if let Ok(_grpc_client) =
+                        wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>()
+                    {
                         // gRPC客户端已经在创建时连接，这里不需要额外的连接步骤
                         println!("[TONDI SERVICE] gRPC客户端已连接，无需额外连接步骤");
                     } else {
@@ -298,8 +298,11 @@ impl TondiService {
 
     pub fn core_wallet(&self) -> Option<Arc<CoreWallet>> {
         println!("[CORE WALLET DEBUG] core_wallet() 被调用");
-        println!("[CORE WALLET DEBUG] self.wallet 类型: {:?}", std::any::type_name_of_val(&*self.wallet));
-        
+        println!(
+            "[CORE WALLET DEBUG] self.wallet 类型: {:?}",
+            std::any::type_name_of_val(&*self.wallet)
+        );
+
         // 尝试 downcast
         let downcast_result = self.wallet.clone().downcast_arc::<CoreWallet>();
         match &downcast_result {
@@ -339,44 +342,17 @@ impl TondiService {
     }
 
     pub fn rpc_url(&self) -> Option<String> {
-        println!("[RPC URL DEBUG] rpc_url 被调用");
         if let Some(wallet) = self.core_wallet() {
-            println!("[RPC URL DEBUG] wallet 存在，has_rpc: {}", wallet.has_rpc());
             if !wallet.has_rpc() {
-                println!("[RPC URL DEBUG] wallet 没有 RPC，返回 None");
                 None
-            } else if let Ok(grpc_client) =
-                wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>()
-            {
-                // gRPC客户端 - 优先显示gRPC连接
-                println!("[RPC URL DEBUG] 检测到 gRPC 客户端");
-                let raw_url = grpc_client.url();
-                println!("[RPC URL DEBUG] gRPC 原始 URL: {:?}", raw_url);
-                let formatted_url = raw_url.map(|url| {
-                    // 检查URL是否已经包含scheme
-                    if url.starts_with("grpc://") || url.starts_with("http://") || url.starts_with("https://") {
-                        url
-                    } else {
-                        format!("grpc://{}", url)
-                    }
-                });
-                println!("[RPC URL DEBUG] gRPC 格式化 URL: {:?}", formatted_url);
-                formatted_url
             } else if let Ok(wrpc_client) =
                 wallet.rpc_api().clone().downcast_arc::<TondiRpcClient>()
             {
-                // wRPC客户端 - 作为fallback
-                println!("[RPC URL DEBUG] 检测到 wRPC 客户端");
-                let url = wrpc_client.url();
-                println!("[RPC URL DEBUG] wRPC URL: {:?}", url);
-                url
+                wrpc_client.url()
             } else {
-                // 其他类型的RPC客户端
-                println!("[RPC URL DEBUG] 未知的 RPC 客户端类型");
                 None
             }
         } else {
-            println!("[RPC URL DEBUG] wallet 不存在，返回 None");
             None
         }
     }
@@ -421,30 +397,13 @@ impl TondiService {
 
             for service in crate::runtime::runtime().services().into_iter() {
                 let instant = Instant::now();
-                let service_name = service.name().to_string();
-                
-                // Add timeout mechanism to prevent individual services from hanging
-                let detach_result = tokio::time::timeout(
-                    tokio::time::Duration::from_secs(5),
-                    service.clone().detach_rpc()
-                ).await;
-                
-                match detach_result {
-                    Ok(Ok(_)) => {
-                        if instant.elapsed().as_millis() > 1_000 {
-                            log_warn!(
-                                "WARNING: detach_rpc() for '{}' took {} msec",
-                                service_name,
-                                instant.elapsed().as_millis()
-                            );
-                        }
-                    }
-                    Ok(Err(e)) => {
-                        log_warn!("Warning: detach_rpc() for '{}' failed: {}", service_name, e);
-                    }
-                    Err(_) => {
-                        log_warn!("Warning: detach_rpc() for '{}' timed out after 5 seconds", service_name);
-                    }
+                service.clone().detach_rpc().await?;
+                if instant.elapsed().as_millis() > 1_000 {
+                    log_warn!(
+                        "WARNING: detach_rpc() for '{}' took {} msec",
+                        service.name(),
+                        instant.elapsed().as_millis()
+                    );
                 }
             }
 
@@ -475,265 +434,32 @@ impl TondiService {
         rpc: Option<Rpc>,
         network: Network,
     ) -> Result<()> {
-        println!("[START ALL SERVICES DEBUG] start_all_services 被调用");
-        println!("[START ALL SERVICES DEBUG] rpc 参数: {:?}", rpc.is_some());
-        println!("[START ALL SERVICES DEBUG] network: {:?}", network);
+        self.services_start_instant
+            .lock()
+            .unwrap()
+            .replace(Instant::now());
 
-        // 设置网络
         *self.network.lock().unwrap() = network;
-        println!("[START ALL SERVICES DEBUG] 网络已设置: {:?}", network);
 
-        // 简化模式匹配，与kaspa-ng保持一致
-        if let Some(rpc) = rpc {
-            if let Some(wallet) = self.core_wallet() {
-                println!("[START ALL SERVICES DEBUG] ✅ 使用提供的 RPC 和钱包");
-                
-                // 获取RPC API
-                let rpc_api = rpc.rpc_api().clone();
-                println!("[START ALL SERVICES DEBUG] RPC API 获取成功");
+        if let (Some(rpc), Some(wallet)) = (rpc, self.core_wallet()) {
+            let rpc_api = rpc.rpc_api().clone();
 
-                // 设置网络ID
-                println!("[START ALL SERVICES DEBUG] 开始设置网络 ID...");
-                match wallet.set_network_id(&network.into()) {
-                    Ok(_) => println!("[START ALL SERVICES DEBUG] 网络 ID 设置完成"),
-                    Err(e) => {
-                        println!("[START ALL SERVICES DEBUG] ❌ 网络 ID 设置失败: {:?}", e);
-                        return Err(e.into());
-                    }
-                }
+            wallet
+                .set_network_id(&network.into())
+                .expect("Can not change network id while the wallet is connected");
 
-                // 绑定RPC
-                println!("[START ALL SERVICES DEBUG] 开始绑定 RPC...");
-                match wallet.bind_rpc(Some(rpc.clone())).await {
-                    Ok(_) => println!("[START ALL SERVICES DEBUG] RPC 绑定完成"),
-                    Err(e) => {
-                        println!("[START ALL SERVICES DEBUG] ❌ RPC 绑定失败: {:?}", e);
-                        return Err(e.into());
-                    }
-                }
+            wallet.bind_rpc(Some(rpc)).await.unwrap();
+            wallet
+                .start()
+                .await
+                .expect("Unable to start wallet service");
 
-                // 启动钱包服务
-                println!("[START ALL SERVICES DEBUG] 开始启动钱包服务...");
-                match wallet.start().await {
-                    Ok(_) => println!("[START ALL SERVICES DEBUG] 钱包服务启动完成"),
-                    Err(e) => {
-                        println!("[START ALL SERVICES DEBUG] ❌ 钱包服务启动失败: {:?}", e);
-                        return Err(e.into());
-                    }
-                }
-
-                // 为所有服务附加RPC API
-                println!("[START ALL SERVICES DEBUG] 开始为所有服务附加 RPC API...");
-                for service in crate::runtime::runtime().services().into_iter() {
-                    let service_name = service.name().to_string();
-                    match service.attach_rpc(&rpc_api).await {
-                        Ok(_) => println!("[START ALL SERVICES DEBUG] 服务 {} RPC API 附加成功", service_name),
-                        Err(e) => {
-                            println!("[START ALL SERVICES DEBUG] ❌ 服务 {} RPC API 附加失败: {:?}", service_name, e);
-                            return Err(e);
-                        }
-                    }
-                }
-                println!("[START ALL SERVICES DEBUG] 所有服务 RPC API 附加完成");
-
-                println!("[START ALL SERVICES DEBUG] ✅ 钱包服务启动完成");
-                
-                // 桌面版本：在这里添加同步状态检查
-                println!("[START ALL SERVICES DEBUG] 🖥️ 桌面版本：开始检查同步状态...");
-                if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
-                    println!("[START ALL SERVICES DEBUG] ✅ 桌面版本：成功获取gRPC客户端");
-                    println!("[START ALL SERVICES DEBUG] 🔍 桌面版本：开始调用GetServerInfo API...");
-                    
-                    // 调用GetServerInfo API获取节点的详细信息
-                    match rpc_api.get_server_info().await {
-                        Ok(server_info) => {
-                            println!("[START ALL SERVICES DEBUG] 🚀 桌面版本 - GetServerInfo API 调用成功！");
-                            println!("[START ALL SERVICES DEBUG] 📊 节点详细信息:");
-                            println!("[START ALL SERVICES DEBUG]   - 同步状态: {}", server_info.is_synced);
-                            println!("[START ALL SERVICES DEBUG]   - 服务器版本: {}", server_info.server_version);
-                            println!("[START ALL SERVICES DEBUG]   - 网络ID: {:?}", server_info.network_id);
-                            println!("[START ALL SERVICES DEBUG]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
-                            println!("[START ALL SERVICES DEBUG]   - 有UTXO索引: {}", server_info.has_utxo_index);
-                            println!("[START ALL SERVICES DEBUG]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
-                            
-                            // 发送ServerStatus事件
-                            let network_id = network.into();
-                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
-                            
-                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                is_synced: server_info.is_synced,
-                                network_id,
-                                url: Some(url),
-                                server_version: server_info.server_version,
-                            })
-                            .unwrap();
-                            
-                            println!("[START ALL SERVICES DEBUG] ✅ 桌面版本ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
-                        }
-                        Err(e) => {
-                            println!("[START ALL SERVICES DEBUG] ❌ 桌面版本GetServerInfo API调用失败: {}", e);
-                            println!("[START ALL SERVICES DEBUG] ⚠️ 使用默认同步状态: false");
-                            
-                            let network_id = network.into();
-                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
-                            
-                            // 使用默认值
-                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                is_synced: false,
-                                network_id,
-                                url: Some(url),
-                                server_version: "gRPC (default)".to_string(),
-                            })
-                            .unwrap();
-                        }
-                    }
-                } else {
-                    println!("[START ALL SERVICES DEBUG] ❌ 桌面版本：无法获取gRPC客户端");
-                }
-                
-                // 启动余额监控服务，与 kaspa-ng 的架构对齐
-                println!("[START ALL SERVICES DEBUG] 准备启动余额监控服务");
-                let wallet_clone = wallet.clone();
-                let rpc_clone = rpc.clone();
-                let service_self = self.clone();
-                
-                println!("[START ALL SERVICES DEBUG] 克隆完成，开始 spawn 余额监控服务");
-                tokio::spawn(async move {
-                    println!("[BALANCE MONITOR] 🚀 余额监控服务已启动！");
-                    println!("[BALANCE MONITOR] 等待钱包完全启动...");
-                    
-                    // 增加等待时间，确保钱包完全启动
-                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                    println!("[BALANCE MONITOR] 等待完成，开始查询余额");
-                    
-                    // 重试机制：多次尝试查询账户
-                    let mut retry_count = 0;
-                    let max_retries = 10;
-                    
-                    while retry_count < max_retries {
-                        println!("[BALANCE MONITOR] 尝试 {} / {}: 查询钱包状态", retry_count + 1, max_retries);
-                        
-                        if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
-                            println!("[BALANCE MONITOR] ✅ 钱包状态查询成功");
-                            
-                            if let Some(accounts) = status.account_descriptors {
-                                if !accounts.is_empty() {
-                                    println!("[BALANCE MONITOR] 🎉 找到 {} 个账户！", accounts.len());
-                                    
-                                    for account in accounts {
-                                        if let Some(receive_address) = account.receive_address() {
-                                            println!("[BALANCE MONITOR] 查询账户 {} 的余额", account.name_or_id());
-                                            
-                                            // 查询余额
-                                            let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
-                                                tondi_rpc_core::RpcAddress::from(receive_address.clone())
-                                            );
-                                            
-                                            // 使用 RPC API 查询余额
-                                            if let Ok(balance_response) = rpc_clone.rpc_api().get_balance_by_address_call(None, balance_request).await {
-                                                // 创建 Balance 对象
-                                                let balance = tondi_wallet_core::prelude::Balance::new(
-                                                    balance_response.balance, // mature
-                                                    0,                       // pending
-                                                    0,                       // outgoing
-                                                    0,                       // mature_utxo_count
-                                                    0,                       // pending_utxo_count
-                                                    0,                       // stasis_utxo_count
-                                                );
-                                                
-                                                // 发送余额更新事件
-                                                let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
-                                                    balance: Some(balance),
-                                                    id: account.account_id.clone().into(),
-                                                });
-                                                
-                                                println!("[BALANCE MONITOR] 🎉 账户 {} 余额更新成功: {} sau", 
-                                                    account.name_or_id(), balance_response.balance);
-                                            } else {
-                                                println!("[BALANCE MONITOR] ❌ 账户 {} 余额查询失败", account.name_or_id());
-                                            }
-                                        }
-                                    }
-                                    
-                                    // 找到账户后，跳出重试循环
-                                    break;
-                                } else {
-                                    println!("[BALANCE MONITOR] ⚠️ 账户列表为空，等待账户加载...");
-                                }
-                            } else {
-                                println!("[BALANCE MONITOR] ⚠️ 没有找到账户描述符，等待账户加载...");
-                            }
-                        } else {
-                            println!("[BALANCE MONITOR] ❌ 钱包状态查询失败，重试中...");
-                        }
-                        
-                        retry_count += 1;
-                        if retry_count < max_retries {
-                            println!("[BALANCE MONITOR] 等待 3 秒后重试...");
-                            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                        }
-                    }
-                    
-                    if retry_count >= max_retries {
-                        println!("[BALANCE MONITOR] ⚠️ 达到最大重试次数，账户可能还没有创建或加载");
-                    }
-                    
-                    println!("[BALANCE MONITOR] 进入定期余额更新循环（每60秒）");
-                    // 每60秒更新一次余额（模拟 kaspa-ng 的自动更新）
-                    loop {
-                        tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-                        println!("[BALANCE MONITOR] 🔄 执行定期余额更新");
-                        
-                        if let Ok(status) = wallet_clone.clone().get_status_call(tondi_wallet_core::api::GetStatusRequest { name: None }).await {
-                            if let Some(accounts) = status.account_descriptors {
-                                for account in accounts {
-                                    if let Some(receive_address) = account.receive_address() {
-                                        let balance_request = tondi_rpc_core::GetBalanceByAddressRequest::new(
-                                            tondi_rpc_core::RpcAddress::from(receive_address.clone())
-                                        );
-                                        
-                                        if let Ok(balance_response) = rpc_clone.rpc_api().get_balance_by_address_call(None, balance_request).await {
-                                            let balance = tondi_wallet_core::prelude::Balance::new(
-                                                balance_response.balance, 0, 0, 0, 0, 0
-                                            );
-                                            
-                                            let _ = service_self.core_wallet_notify(CoreWalletEvents::Balance {
-                                                balance: Some(balance),
-                                                id: account.account_id.clone().into(),
-                                            });
-                                            
-                                            println!("[BALANCE MONITOR] ✅ 账户 {} 定期余额更新: {} sau", 
-                                                account.name_or_id(), balance_response.balance);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-                Ok(())
-            } else {
-                println!("[START ALL SERVICES DEBUG] ⚠️ core_wallet() 返回 None");
-                println!("[START ALL SERVICES DEBUG] 使用默认连接");
-                
-                // 使用默认连接，与 kaspa-ng 保持一致
-                self.wallet()
-                    .connect_call(ConnectRequest {
-                        url: None,
-                        network_id: network.into(),
-                        retry_on_error: true,
-                        block_async_connect: false,
-                        require_sync: false,
-                    })
-                    .await?;
-
-                Ok(())
+            for service in crate::runtime::runtime().services().into_iter() {
+                service.attach_rpc(&rpc_api).await?;
             }
+
+            Ok(())
         } else {
-            println!("[START ALL SERVICES DEBUG] ⚠️ 没有提供 RPC");
-            println!("[START ALL SERVICES DEBUG] 使用默认连接");
-            
-            // 使用默认连接，与 kaspa-ng 保持一致
             self.wallet()
                 .connect_call(ConnectRequest {
                     url: None,
@@ -827,25 +553,25 @@ impl TondiService {
 
                 self.handle_network_change(network).await?;
 
-                println!("[TONDI] 启动进程内节点...");
+                log_info!("[TONDI] 启动进程内节点...");
                 let tondid = Arc::new(inproc::InProc::default());
                 self.retain(tondid.clone());
 
                 // 克隆config以避免所有权问题
                 let config_clone = config.clone();
                 tondid.clone().start(config).await.unwrap();
-                println!("[TONDI] 进程内节点启动成功");
+                log_info!("[TONDI] 进程内节点启动成功");
 
                 // 等待更长时间让节点完全启动和初始化
-                println!("[TONDI] 等待节点完全启动和初始化...");
+                log_info!("[TONDI] 等待节点完全启动和初始化...");
                 tokio::time::sleep(Duration::from_secs(10)).await;
-                println!("[TONDI] 节点初始化完成，尝试连接gRPC...");
+                log_info!("[TONDI] 节点初始化完成，尝试连接gRPC...");
 
                 // 尝试使用gRPC连接到本地节点
                 let grpc_config = RpcConfig::Grpc {
                     url: Some(config_clone.grpc_network_interface.clone()),
                 };
-                
+
                 match Self::create_rpc_client(&grpc_config, network).await {
                     Ok(grpc_rpc) => {
                         println!("[TONDI] 成功连接到本地gRPC端点");
@@ -855,7 +581,7 @@ impl TondiService {
 
                         self.start_all_services(Some(rpc), network).await?;
                         self.connect_rpc_client().await?;
-                        
+
                         // 等待一下让服务完全启动
                         tokio::time::sleep(Duration::from_secs(2)).await;
                         println!("[TONDI] 所有服务启动完成");
@@ -871,7 +597,7 @@ impl TondiService {
 
                         self.start_all_services(Some(rpc), network).await?;
                         self.connect_rpc_client().await?;
-                        
+
                         // 等待一下让服务完全启动
                         tokio::time::sleep(Duration::from_secs(2)).await;
                         println!("[TONDI] 所有服务启动完成（进程内RPC模式）");
@@ -910,7 +636,8 @@ impl TondiService {
                     }
                 };
 
-                let rpc = Self::create_rpc_client(&rpc_config, network).await
+                let rpc = Self::create_rpc_client(&rpc_config, network)
+                    .await
                     .expect("Tondid Service - unable to create wRPC client");
                 self.start_all_services(Some(rpc), network).await?;
                 self.connect_rpc_client().await?;
@@ -947,7 +674,8 @@ impl TondiService {
                     }
                 };
 
-                let rpc = Self::create_rpc_client(&rpc_config, network).await
+                let rpc = Self::create_rpc_client(&rpc_config, network)
+                    .await
                     .expect("Tondid Service - unable to create RPC client");
                 self.start_all_services(Some(rpc), network).await?;
                 self.connect_rpc_client().await?;
@@ -989,7 +717,8 @@ impl TondiService {
                     }
                 };
 
-                let rpc = Self::create_rpc_client(&rpc_config, network).await
+                let rpc = Self::create_rpc_client(&rpc_config, network)
+                    .await
                     .expect("Tondid Service - unable to create wRPC client");
                 self.start_all_services(Some(rpc), network).await?;
                 self.connect_rpc_client().await?;
@@ -1000,6 +729,7 @@ impl TondiService {
                 rpc_config,
                 network,
             } => {
+                log_info!("TondidServiceEvents::StartRemoteConnection");
                 if runtime::is_chrome_extension() {
                     self.stop_all_services().await?;
 
@@ -1013,7 +743,8 @@ impl TondiService {
 
                     self.handle_network_change(network).await?;
 
-                    let rpc = Self::create_rpc_client(&rpc_config, network).await
+                    let rpc = Self::create_rpc_client(&rpc_config, network)
+                        .await
                         .expect("Tondid Service - unable to create wRPC client");
                     self.start_all_services(Some(rpc), network).await?;
                     self.connect_rpc_client().await?;
@@ -1103,113 +834,60 @@ impl Service for TondiService {
     }
 
     async fn spawn(self: Arc<Self>) -> Result<()> {
-        println!("[TONDI SERVICE] 🚀 spawn方法开始执行");
         let _application_events_sender = self.application_events.sender.clone();
 
         // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
+        // ^ TODO: - CHECK IF THE WALLET IS OPEN, GET WALLET CONTEXT
 
         let status = if runtime::is_chrome_extension() {
-            println!("[TONDI SERVICE] 🌐 Chrome扩展模式");
             self.wallet().get_status(Some("tondi-dashboard")).await.ok()
         } else {
-            println!("[TONDI SERVICE] 🖥️ 桌面模式");
             None
         };
 
-        // 为桌面版本也添加同步状态检查
         if let Some(status) = status {
-                            let GetStatusResponse {
-                    is_connected,
-                    is_open: _,
-                    is_synced: _,
-                    url,
-                    is_wrpc_client: _,
-                    network_id,
-                    context,
-                    selected_account_id,
-                    wallet_descriptor,
-                    account_descriptors,
-                } = status;
-            
-            println!("[TONDI SERVICE DEBUG] GetStatusResponse: is_connected={}, url={:?}, network_id={:?}", is_connected, url, network_id);
+            let GetStatusResponse {
+                is_connected,
+                is_open: _,
+                is_synced,
+                url,
+                is_wrpc_client: _,
+                network_id,
+                context,
+                selected_account_id,
+                wallet_descriptor,
+                account_descriptors,
+            } = status;
 
             if let Some(context) = context {
                 let _context = Context::try_from_slice(&context)?;
 
-                                    if is_connected {
-                        let network_id = network_id.unwrap_or_else(|| self.network().into());
-                        
-                        println!("[TONDI SERVICE DEBUG] GetStatusResponse.is_connected=true, 发送 CoreWallet::Connect 事件");
-                        println!("[TONDI SERVICE DEBUG] Connect 事件参数: network_id={:?}, url={:?}", network_id, url);
+                if is_connected {
+                    let network_id = network_id.unwrap_or_else(|| self.network().into());
 
-                        self.core_wallet_notify(CoreWalletEvents::Connect {
-                            network_id,
-                            url: url.clone(),
-                        })
-                        .unwrap();
+                    self.core_wallet_notify(CoreWalletEvents::Connect {
+                        network_id,
+                        url: url.clone(),
+                    })
+                    .unwrap();
 
-                        // 初始连接时获取一次节点状态，然后依赖事件驱动
-                        if let Some(wallet) = self.core_wallet() {
-                            if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
-                                // 只在初始连接时调用一次GetServerInfo API
-                                match rpc_api.get_server_info().await {
-                                    Ok(server_info) => {
-                                        println!("[TONDI SERVICE] 🚀 初始连接 - GetServerInfo API 调用成功！");
-                                        println!("[TONDI SERVICE] 📊 节点初始状态:");
-                                        println!("[TONDI SERVICE]   - 同步状态: {}", server_info.is_synced);
-                                        println!("[TONDI SERVICE]   - 服务器版本: {}", server_info.server_version);
-                                        println!("[TONDI SERVICE]   - 网络ID: {:?}", server_info.network_id);
-                                        println!("[TONDI SERVICE]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
-                                        println!("[TONDI SERVICE]   - 有UTXO索引: {}", server_info.has_utxo_index);
-                                        println!("[TONDI SERVICE]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
-                                        
-                                        // 发送初始ServerStatus事件
-                                        self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                            is_synced: server_info.is_synced,
-                                            network_id,
-                                            url,
-                                            server_version: server_info.server_version,
-                                        })
-                                        .unwrap();
-                                        
-                                        println!("[TONDI SERVICE] ✅ 初始ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
-                                        println!("[TONDI SERVICE] 🔄 后续同步状态更新将依赖节点推送的事件...");
-                                    }
-                                    Err(e) => {
-                                        println!("[TONDI SERVICE] ❌ 初始GetServerInfo API调用失败: {}", e);
-                                        println!("[TONDI SERVICE] ⚠️ 使用默认初始状态，等待节点事件推送");
-                                        
-                                        // 使用默认值，等待节点推送事件
-                                        self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                            is_synced: false,
-                                            network_id,
-                                            url,
-                                            server_version: "gRPC (waiting for events)".to_string(),
-                                        })
-                                        .unwrap();
-                                    }
-                                }
-                            } else {
-                                println!("[TONDI SERVICE] ⚠️ 无法获取gRPC客户端，使用默认状态");
-                                self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                    is_synced: false,
-                                    network_id,
-                                    url,
-                                    server_version: "gRPC (no client)".to_string(),
-                                })
-                                .unwrap();
-                            }
-                        } else {
-                            println!("[TONDI SERVICE] ⚠️ 无法获取钱包实例，使用默认状态");
-                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                is_synced: false,
-                                network_id,
-                                url,
-                                server_version: "gRPC (no wallet)".to_string(),
-                            })
-                            .unwrap();
-                        }
-                    }
+                    // ^ TODO - Get appropriate `server_version`
+                    let server_version = Default::default();
+
+                    self.core_wallet_notify(CoreWalletEvents::ServerStatus {
+                        is_synced,
+                        network_id,
+                        url,
+                        server_version,
+                    })
+                    .unwrap();
+                }
 
                 if let (Some(wallet_descriptor), Some(account_descriptors)) =
                     (wallet_descriptor, account_descriptors)
@@ -1229,7 +907,8 @@ impl Service for TondiService {
 
                     self.notify(crate::events::Events::ChangeSection(TypeId::of::<
                         crate::modules::account_manager::AccountManager,
-                    >()))
+                    >(
+                    )))
                     .unwrap();
                 }
 
@@ -1239,63 +918,7 @@ impl Service for TondiService {
             } else {
                 // new instance - emit startup event
                 if let Some(node_settings) = self.connect_on_startup.as_ref() {
-                    // 即使有connect_on_startup，也优先尝试启动本地集成节点
-                    cfg_if! {
-                        if #[cfg(not(target_arch = "wasm32"))] {
-                            if node_settings.node_kind == TondidNodeKind::IntegratedInProc {
-                                println!("[TONDI] 检测到集成节点配置，启动本地集成节点...");
-                                let config = Config::from(node_settings.clone());
-                                let event = TondidServiceEvents::StartInternalInProc { 
-                                    config: config.clone(), 
-                                    network: node_settings.network 
-                                };
-                                self.service_events.sender.try_send(event).unwrap_or_else(|err| {
-                                    println!("[TONDI] 无法发送启动事件: {}", err);
-                                });
-                            } else {
-                                // 非集成节点，使用原有逻辑
-                                self.apply_node_settings(node_settings).await?;
-                            }
-                        } else {
-                            // Web版本，使用原有逻辑
-                            self.apply_node_settings(node_settings).await?;
-                        }
-                    }
-                } else {
-                    // 如果没有配置启动连接，根据网络类型决定启动策略
-                    cfg_if! {
-                        if #[cfg(not(target_arch = "wasm32"))] {
-                            match Network::default() {
-                                Network::Devnet => {
-                                    println!("[TONDI] Devnet模式，尝试连接远程节点...");
-                                    // 对于devnet，使用远程连接配置
-                                    let event = TondidServiceEvents::StartRemoteConnection { 
-                                        rpc_config: RpcConfig::Grpc {
-                                            url: Some(NetworkInterfaceConfig {
-                                                kind: NetworkInterfaceKind::Custom,
-                                                custom: "8.210.45.192:16610".parse().unwrap(),
-                                            }),
-                                        },
-                                        network: Network::Devnet 
-                                    };
-                                    self.service_events.sender.try_send(event).unwrap_or_else(|err| {
-                                        println!("[TONDI] 无法发送启动事件: {}", err);
-                                    });
-                                }
-                                _ => {
-                                    println!("[TONDI] 自动启动本地集成节点...");
-                                    let config = Config::from_network(Network::Mainnet);
-                                    let event = TondidServiceEvents::StartInternalInProc { 
-                                        config: config.clone(), 
-                                        network: Network::Mainnet 
-                                    };
-                                    self.service_events.sender.try_send(event).unwrap_or_else(|err| {
-                                        println!("[TONDI] 无法发送启动事件: {}", err);
-                                    });
-                                }
-                            }
-                        }
-                    }
+                    self.apply_node_settings(node_settings).await?;
                 }
 
                 // new instance - setup new context
@@ -1319,7 +942,6 @@ impl Service for TondiService {
             // wallet.multiplexer().channel()
             let wallet_events = wallet.multiplexer().channel();
 
-            println!("[TONDI SERVICE] 开始主事件循环");
             loop {
                 select! {
                     msg = wallet_events.recv().fuse() => {
@@ -1344,80 +966,8 @@ impl Service for TondiService {
                 }
             }
         } else {
-            // 桌面版本：简化同步状态检查
-            println!("[TONDI SERVICE] 🖥️ 桌面版本，简化同步状态检查...");
-            
-            // 立即尝试获取同步状态，不等待
-            if let Some(wallet) = self.core_wallet() {
-                println!("[TONDI SERVICE] ✅ 桌面版本：成功获取钱包实例");
-                
-                if let Ok(rpc_api) = wallet.rpc_api().clone().downcast_arc::<TondiGrpcClient>() {
-                    println!("[TONDI SERVICE] ✅ 桌面版本：成功获取gRPC客户端");
-                    println!("[TONDI SERVICE] 🔍 桌面版本：开始调用GetServerInfo API...");
-                    
-                    // 调用GetServerInfo API获取节点的详细信息
-                    match rpc_api.get_server_info().await {
-                        Ok(server_info) => {
-                            println!("[TONDI SERVICE] 🚀 桌面版本 - GetServerInfo API 调用成功！");
-                            println!("[TONDI SERVICE] 📊 节点详细信息:");
-                            println!("[TONDI SERVICE]   - 同步状态: {}", server_info.is_synced);
-                            println!("[TONDI SERVICE]   - 服务器版本: {}", server_info.server_version);
-                            println!("[TONDI SERVICE]   - 网络ID: {:?}", server_info.network_id);
-                            println!("[TONDI SERVICE]   - 虚拟DAA分数: {}", server_info.virtual_daa_score);
-                            println!("[TONDI SERVICE]   - 有UTXO索引: {}", server_info.has_utxo_index);
-                            println!("[TONDI SERVICE]   - RPC API版本: {}.{}", server_info.rpc_api_version, server_info.rpc_api_revision);
-                            
-                            // 发送ServerStatus事件
-                            let network_id = self.network().into();
-                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
-                            
-                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                is_synced: server_info.is_synced,
-                                network_id,
-                                url: Some(url),
-                                server_version: server_info.server_version,
-                            })
-                            .unwrap();
-                            
-                            println!("[TONDI SERVICE] ✅ 桌面版本ServerStatus事件已发送，同步状态: {}", server_info.is_synced);
-                        }
-                        Err(e) => {
-                            println!("[TONDI SERVICE] ❌ 桌面版本GetServerInfo API调用失败: {}", e);
-                            println!("[TONDI SERVICE] ⚠️ 使用默认同步状态: false");
-                            
-                            let network_id = self.network().into();
-                            let url = format!("gRPC://{}:{}", "8.210.45.192", 16610);
-                            
-                            // 使用默认值
-                            self.core_wallet_notify(CoreWalletEvents::ServerStatus {
-                                is_synced: false,
-                                network_id,
-                                url: Some(url),
-                                server_version: "gRPC (default)".to_string(),
-                            })
-                            .unwrap();
-                        }
-                    }
-                } else {
-                    println!("[TONDI SERVICE] ❌ 桌面版本：无法获取gRPC客户端");
-                }
-            } else {
-                println!("[TONDI SERVICE] ❌ 桌面版本：无法获取钱包实例");
-            }
-            
-            println!("[TONDI SERVICE] 🖥️ 桌面版本：同步状态检查完成，开始主循环");
-            
             loop {
                 select! {
-                    // msg = wallet_events.recv().fuse() => {
-                    // // msg = wallet.multiplexer().channel().recv().fuse() => {
-                    //     if let Ok(event) = msg {
-                    //         self.handle_multiplexer(event).await?;
-                    //         } else {
-                    //         break;
-                    //         }
-                    //     }
-
                     msg = self.as_ref().service_events.receiver.recv().fuse() => {
                         if let Ok(event) = msg {
                             if self.handle_event(event).await? {
@@ -1458,21 +1008,18 @@ impl TondidServiceEvents {
     ) -> Result<Self> {
         cfg_if! {
             if #[cfg(not(target_arch = "wasm32"))] {
-                // 桌面版本：所有模式都使用gRPC配置
+
                 match &node_settings.node_kind {
                     TondidNodeKind::Disable => {
                         Ok(TondidServiceEvents::Disable { network : node_settings.network })
                     }
                     TondidNodeKind::IntegratedInProc => {
-                        // 对于集成模式，也使用gRPC配置
                         Ok(TondidServiceEvents::StartInternalInProc { config : Config::from(node_settings.clone()), network : node_settings.network })
                     }
                     TondidNodeKind::IntegratedAsDaemon => {
-                        // 对于集成守护进程模式，也使用gRPC配置
                         Ok(TondidServiceEvents::StartInternalAsDaemon { config : Config::from(node_settings.clone()), network : node_settings.network })
                     }
                     TondidNodeKind::IntegratedAsPassiveSync => {
-                        // 对于被动同步模式，也使用gRPC配置
                         Ok(TondidServiceEvents::StartInternalAsPassiveSync { config : Config::from(node_settings.clone()), network : node_settings.network })
                     }
                     TondidNodeKind::ExternalAsDaemon => {
@@ -1480,22 +1027,18 @@ impl TondidServiceEvents {
                         Ok(TondidServiceEvents::StartExternalAsDaemon { path : PathBuf::from(path), config : Config::from(node_settings.clone()), network : node_settings.network })
                     }
                     TondidNodeKind::Remote => {
-                        // 远程模式使用gRPC配置
                         Ok(TondidServiceEvents::StartRemoteConnection { rpc_config : RpcConfig::from_node_settings(node_settings,options), network : node_settings.network })
                     }
                 }
 
             } else {
-                // Web版本：只支持远程模式，使用wRPC配置
+
                 match &node_settings.node_kind {
                     TondidNodeKind::Disable => {
                         Ok(TondidServiceEvents::Disable { network : node_settings.network })
                     }
                     TondidNodeKind::Remote => {
-                        // Web版本强制使用wRPC
-                        let mut web_settings = node_settings.clone();
-                        web_settings.rpc_kind = RpcKind::Wrpc;
-                        Ok(TondidServiceEvents::StartRemoteConnection { rpc_config : RpcConfig::from_node_settings(&web_settings,options), network : node_settings.network })
+                        Ok(TondidServiceEvents::StartRemoteConnection { rpc_config : RpcConfig::from_node_settings(node_settings,options), network : node_settings.network })
                     }
                 }
             }
