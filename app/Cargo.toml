@@ -22,3 +22,6 @@ tokio.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures.workspace = true
+# FIX getrandom build
+getrandom_v2 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom_v3 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }

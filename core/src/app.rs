@@ -2,10 +2,10 @@ use crate::events::ApplicationEventsChannel;
 use crate::interop::Adaptor;
 use crate::result::Result;
 use cfg_if::cfg_if;
+use std::sync::Arc;
 use tondi_dashboard_core::runtime;
 use tondi_dashboard_core::settings::Settings;
 use tondi_wallet_core::api::WalletApi;
-use std::sync::Arc;
 use workflow_i18n::*;
 use workflow_log::*;
 
@@ -13,7 +13,8 @@ use workflow_log::*;
 pub const TONDI_NG_ICON_SVG: &[u8] = include_bytes!("../resources/images/tondi-node-dark.svg");
 pub const TONDI_NG_ICON_TRANSPARENT_SVG: &[u8] =
     include_bytes!("../resources/images/tondi-node-transparent.svg");
-pub const TONDI_DASHBOARD_LOGO_SVG: &[u8] = include_bytes!("../resources/images/tondi-dashboard.svg");
+pub const TONDI_DASHBOARD_LOGO_SVG: &[u8] =
+    include_bytes!("../resources/images/tondi-dashboard.svg");
 pub const I18N_EMBEDDED: &str = include_str!("../resources/i18n/i18n.json");
 pub const BUILD_TIMESTAMP: &str = env!("VERGEN_BUILD_TIMESTAMP");
 pub const GIT_DESCRIBE: &str = env!("VERGEN_GIT_DESCRIBE");
@@ -337,6 +338,7 @@ cfg_if! {
                 log_error!("Unable to load settings: {err}");
                 Settings::default()
             });
+            log_info!("Settings: {settings:?}");
 
             i18n::Builder::new(settings.language_code.as_str(), "en")
                 .with_static_json_data(I18N_EMBEDDED)

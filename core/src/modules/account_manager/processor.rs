@@ -36,9 +36,18 @@ impl<'context> Processor<'context> {
                 if request_estimate {
 
                     let address = match network_type {
-                        NetworkType::Testnet => Address::try_from("tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhqrxplya").unwrap(),
-                        NetworkType::Mainnet => Address::try_from("tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkx9awp4e").unwrap(),
-                        NetworkType::Devnet => Address::try_from("tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhqrxplya").unwrap(),
+                        NetworkType::Mainnet => Address::try_from(
+                            "tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7ezllr",
+                        )
+                        .unwrap(),
+                        NetworkType::Testnet => Address::try_from(
+                            "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
+                        )
+                        .unwrap(),
+                        NetworkType::Devnet => Address::try_from(
+                            "tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwf642s",
+                        )
+                        .unwrap(),
                         _ => panic!("Unsupported network"),
                     };
 
@@ -187,9 +196,19 @@ impl<'context> Processor<'context> {
 async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, send_amount_sau : u64, priority_fee_sau : u64) -> f64 {
 
     let address = match network_type {
-        NetworkType::Testnet => Address::try_from("tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhqrxplya").unwrap(),
-        NetworkType::Mainnet => Address::try_from("tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkx9awp4e").unwrap(),
-        NetworkType::Devnet => Address::try_from("tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhqrxplya").unwrap(),
+        NetworkType::Mainnet => {
+            Address::try_from("tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7ezllr")
+                .unwrap()
+        }
+
+        NetworkType::Testnet => Address::try_from(
+            "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
+        )
+        .unwrap(),
+        NetworkType::Devnet => Address::try_from(
+            "tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwf642s",
+        )
+        .unwrap(),
         _ => panic!("Unsupported network"),
     };
 
@@ -215,5 +234,37 @@ async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, 
     } else {
         // (priority_fee_sau as f64 / base_mass as f64) + 1.0
         priority_fee_sau as f64 / base_mass as f64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tondi_addresses::{Prefix, Version};
+
+    use super::*;
+
+    #[test]
+    fn test_burn_address() {
+        let burn_addrs = vec![
+            (
+                Prefix::Mainnet,
+                "tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7ezllr",
+            ),
+            (
+                Prefix::Testnet,
+                "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
+            ),
+            (
+                Prefix::Devnet,
+                "tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwf642s",
+            ),
+        ];
+
+        for (prefix, addr) in burn_addrs {
+            assert_eq!(
+                Address::new(prefix, Version::PubKey, &[0u8; 32]),
+                Address::try_from(addr).unwrap()
+            );
+        }
     }
 }

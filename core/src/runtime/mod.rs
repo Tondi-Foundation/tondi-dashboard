@@ -21,9 +21,6 @@ pub use services::Service;
 use services::*;
 use system::*;
 
-// 移除重复的BalanceMonitorService导入
-// use services::balance_monitor::BalanceMonitorService;
-
 pub struct Inner {
     services: Mutex<Vec<Arc<dyn Service>>>,
     repaint_service: Arc<RepaintService>,
@@ -41,8 +38,6 @@ pub struct Inner {
     feerate_monitor_service: Arc<FeerateMonitorService>,
     update_monitor_service: Arc<UpdateMonitorService>,
     market_monitor_service: Arc<MarketMonitorService>,
-    // 移除重复的balance_monitor_service
-    // balance_monitor_service: Arc<BalanceMonitorService>,
 
     // #[cfg(not(feature = "lean"))]
     metrics_service: Arc<MetricsService>,
@@ -95,11 +90,6 @@ impl Runtime {
             settings,
         ));
 
-        // 移除重复的BalanceMonitorService初始化
-        // let balance_monitor_service = Arc::new(BalanceMonitorService::new(
-        //     application_events.clone(),
-        // ));
-
         let metrics_service = Arc::new(MetricsService::new(application_events.clone(), settings));
         cfg_if! {
             if #[cfg(not(feature = "lean"))] {
@@ -122,8 +112,6 @@ impl Runtime {
             feerate_monitor_service.clone(),
             market_monitor_service.clone(),
             update_monitor_service.clone(),
-            // 移除重复的balance_monitor_service
-            // balance_monitor_service.clone(),
             // #[cfg(not(feature = "lean"))]
             metrics_service.clone(),
             #[cfg(not(feature = "lean"))]
@@ -140,15 +128,15 @@ impl Runtime {
                 peer_monitor_service,
                 market_monitor_service,
                 update_monitor_service,
-                // #[cfg(not(feature = "lean"))]
-                metrics_service,
-                #[cfg(not(feature = "lean"))]
-                block_dag_monitor_service,
                 egui_ctx: egui_ctx.clone(),
                 is_running: Arc::new(AtomicBool::new(false)),
                 start_time: Instant::now(),
                 system: Some(system),
                 adaptor,
+                // #[cfg(not(feature = "lean"))]
+                metrics_service,
+                #[cfg(not(feature = "lean"))]
+                block_dag_monitor_service,
             }),
         };
 
@@ -227,14 +215,7 @@ impl Runtime {
         if self.inner.is_running.load(Ordering::SeqCst) {
             self.inner.is_running.store(false, Ordering::SeqCst);
             self.stop_services();
-            
-            // 添加超时机制，防止服务关闭时卡住
-            let timeout = tokio::time::Duration::from_secs(10);
-            match tokio::time::timeout(timeout, self.join_services()).await {
-                Ok(_) => println!("All services shut down successfully"),
-                Err(_) => println!("Warning: Some services took too long to shut down, forcing shutdown"),
-            }
-            
+            self.join_services().await;
             register_global(None);
         }
     }
@@ -390,12 +371,7 @@ impl Runtime {
     }
 
     pub fn request_repaint(&self) {
-        self.repaint_service().smart_trigger();
-    }
-
-    /// 强制立即重绘（用于重要更新）
-    pub fn force_repaint(&self) {
-        self.repaint_service().force_repaint();
+        self.repaint_service().trigger();
     }
 }
 
@@ -458,35 +434,10 @@ pub fn halt() {
         runtime.try_send(Events::Exit).ok();
         runtime.tondi_service().clone().terminate();
 
-        // 使用超时机制，防止halt操作卡住
-        // 注意：这里不能使用 tokio::spawn，因为可能不在 Tokio runtime 上下文中
-        let runtime_clone = runtime.clone();
-        let handle = std::thread::spawn(move || {
-            // 在新线程中创建临时的 Tokio runtime 来执行异步操作
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
-            
-            rt.block_on(async {
-                let timeout = tokio::time::Duration::from_secs(15);
-                match tokio::time::timeout(timeout, runtime_clone.shutdown()).await {
-                    Ok(_) => println!("Runtime shutdown completed"),
-                    Err(_) => println!("Warning: Runtime shutdown timed out"),
-                }
-            });
-        });
+        let handle = tokio::spawn(async move { runtime.shutdown().await });
 
-        // 添加超时等待，防止无限等待
-        let start = std::time::Instant::now();
-        let max_wait = std::time::Duration::from_secs(20);
-        
-        while !handle.is_finished() && start.elapsed() < max_wait {
+        while !handle.is_finished() {
             std::thread::sleep(std::time::Duration::from_millis(50));
-        }
-        
-        if !handle.is_finished() {
-            println!("Warning: Runtime shutdown is taking too long, continuing with exit");
         }
     }
 }

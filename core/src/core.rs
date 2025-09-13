@@ -4,11 +4,11 @@ use crate::market::*;
 use crate::mobile::MobileMenu;
 use egui::load::Bytes;
 use egui_notify::Toasts;
+use std::borrow::Cow;
+use std::future::IntoFuture;
 use tondi_wallet_core::api::TransactionsDataGetResponse;
 use tondi_wallet_core::events::Events as CoreWallet;
 use tondi_wallet_core::storage::{Binding, Hint, PrvKeyDataInfo};
-use std::borrow::Cow;
-use std::future::IntoFuture;
 #[allow(unused_imports)]
 use workflow_i18n::*;
 use workflow_wasm::callback::CallbackMap;
@@ -390,28 +390,26 @@ impl Core {
 
     pub fn change_current_network(&mut self, network: Network) {
         if self.settings.node.network != network {
-            log::info!("Changing network from {:?} to {:?}", self.settings.node.network, network);
-            
-            // Clear devnet custom URL when switching away from devnet
-            if self.settings.node.network == Network::Devnet && network != Network::Devnet {
-                self.settings.node.devnet_custom_url = None;
-                log::info!("Cleared devnet custom URL when switching away from devnet");
-            }
-            
+            log::info!(
+                "Changing network from {:?} to {:?}",
+                self.settings.node.network,
+                network
+            );
+
             self.settings.node.network = network;
-            
+
             // 自动更新端口配置以匹配新的网络类型
             self.settings.node.update_ports_for_network();
             log::info!("Updated port configuration for network: {:?}", network);
-            
+
             // Store settings first
             self.store_settings();
-            
+
             // Update services with new network configuration
             self.runtime
                 .tondi_service()
                 .update_services(&self.settings.node, None);
-                
+
             log::info!("Network change completed successfully");
         }
     }
@@ -422,7 +420,7 @@ impl eframe::App for Core {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.is_shutdown_pending = true;
         println!("{}", i18n("bye!"));
-        
+
         // 在后台线程中执行halt，避免阻塞UI线程
         std::thread::spawn(move || {
             crate::runtime::halt();
@@ -503,6 +501,7 @@ impl Core {
     fn render_frame(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         window_frame(self.window_frame, ctx, "Tondi Dashboard", |ui| {
             if !self.settings.initialized {
+                log_info!("== Init Settings ==");
                 egui::CentralPanel::default().show_inside(ui, |ui| {
                     self.modules
                         .get(&TypeId::of::<modules::Welcome>())
@@ -682,7 +681,7 @@ impl Core {
         let logo_size = logo_rect.size();
         Image::new(ImageSource::Bytes {
             uri: Cow::Borrowed("bytes://logo.svg"),
-                            bytes: Bytes::Static(crate::app::TONDI_DASHBOARD_LOGO_SVG),
+            bytes: Bytes::Static(crate::app::TONDI_DASHBOARD_LOGO_SVG),
         })
         .maintain_aspect_ratio(true)
         // .max_size(logo_size)
@@ -765,7 +764,7 @@ impl Core {
             Events::UpdateLogs => {}
             Events::Metrics { snapshot } => {
                 self.state.node_metrics = Some(snapshot);
-                
+
                 // 如果能收到metrics数据，说明已经连接了，手动设置连接状态
                 // println!("[CORE DEBUG] 收到metrics数据，设置连接状态为true");
                 self.state.is_connected = true;
@@ -893,7 +892,10 @@ impl Core {
                     }
                     #[allow(unused_variables)]
                     CoreWallet::Connect { url, network_id } => {
-                        println!("[CORE DEBUG] 收到 CoreWallet::Connect 事件: url={:?}, network_id={:?}", url, network_id);
+                        println!(
+                            "[CORE DEBUG] 收到 CoreWallet::Connect 事件: url={:?}, network_id={:?}",
+                            url, network_id
+                        );
                         self.state.is_connected = true;
                         self.state.url = url;
                         self.state.network_id = Some(network_id);
@@ -1070,7 +1072,10 @@ impl Core {
                                 });
                         }
                         Binding::Custom(_) => {
-                            log_error!("Error while processing transaction {}: custom bindings are not supported", record.id());
+                            log_error!(
+                                "Error while processing transaction {}: custom bindings are not supported",
+                                record.id()
+                            );
                         }
                     },
                     // Ignore stasis notifications
@@ -1106,7 +1111,10 @@ impl Core {
                                     });
                             }
                             Binding::Custom(_) => {
-                                log_error!("Error while processing transaction {}: custom bindings are not supported", record.id());
+                                log_error!(
+                                    "Error while processing transaction {}: custom bindings are not supported",
+                                    record.id()
+                                );
                             }
                         }
                     }
@@ -1135,7 +1143,10 @@ impl Core {
                                 });
                         }
                         Binding::Custom(_) => {
-                            log_error!("Error while processing transaction {}: custom bindings are not supported", record.id());
+                            log_error!(
+                                "Error while processing transaction {}: custom bindings are not supported",
+                                record.id()
+                            );
                         }
                     },
 
@@ -1150,7 +1161,10 @@ impl Core {
                                 });
                         }
                         Binding::Custom(_) => {
-                            log_error!("Error while processing transaction {}: custom bindings are not supported", record.id());
+                            log_error!(
+                                "Error while processing transaction {}: custom bindings are not supported",
+                                record.id()
+                            );
                         }
                     },
 

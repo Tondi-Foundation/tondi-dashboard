@@ -663,7 +663,7 @@ impl ModuleT for WalletCreate {
                     .render(ui);
             }
             State::PaymentSecret => {
-                let mut proceed = self.context.import_private_key && !self.context.import_with_bip39_passphrase;
+                let proceed = self.context.import_private_key && !self.context.import_with_bip39_passphrase;
                 let mut continue_or_skip = false;
                 Panel::new(self)
                     .with_caption(i18n("Payment & Recovery Password"))
