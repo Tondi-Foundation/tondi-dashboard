@@ -664,14 +664,8 @@ impl TondiService {
                             custom: "8.210.45.192:16610".parse().unwrap(),
                         }),
                     }
-                } else if network == Network::Testnet {
-                    // Use Default Testnet Url
-                    RpcConfig::Wrpc {
-                        url: Some("testnet.tondi.org:17211".into()),
-                        encoding: WrpcEncoding::Borsh,
-                        resolver_urls: None,
-                    }
                 } else {
+                    // 对于其他网络，使用wRPC配置
                     println!("[TONDI SERVICE] 使用wRPC配置");
                     RpcConfig::Wrpc {
                         url: None,
