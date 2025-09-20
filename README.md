@@ -17,7 +17,7 @@ A modern, feature-rich Tondi blockchain wallet and account management dashboard.
 
 - **Backend**: Rust 1.89+ with async/await
 - **Frontend**: WebAssembly (WASM) via egui 0.31.1
-- **Blockchain**: Tondi chain integration (v0.17.0)
+- **Blockchain**: Tondi chain integration (v1.0.2)
 - **Storage**: Local encrypted storage
 - **Network**: gRPC client for node communication
 - **UI Framework**: egui with eframe
