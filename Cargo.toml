@@ -10,7 +10,7 @@ default-members = ["app"]
 
 [workspace.package]
 rust-version = "1.89.0"
-version = "1.0.0"
+version = "1.0.2"
 authors = ["Tondi Developers"]
 license = "ISC"
 edition = "2024"
@@ -19,9 +19,9 @@ repository = "https://github.com/AvatoLabs/tondi-dashboard"
 
 [workspace.dependencies]
 
-tondi-dashboard = { version = "1.0.0", path = "app/", default-features = false }
-tondi-dashboard-core = { version = "1.0.0", path = "core/", default-features = false }
-tondi-dashboard-macros = { version = "1.0.0", path = "macros/", default-features = false }
+tondi-dashboard = { version = "1.0.2", path = "app/", default-features = false }
+tondi-dashboard-core = { version = "1.0.2", path = "core/", default-features = false }
+tondi-dashboard-macros = { version = "1.0.2", path = "macros/", default-features = false }
 
 # ___________________
 #  ____ ____ _  _ _ 
@@ -44,24 +44,24 @@ egui-phosphor = { version = "=0.9.0", features = ["thin","light","regular","bold
 egui-notify = { version = "0.19.0"}
 
 # Tondi dependencies
-tondi-addresses = { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-alloc =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-bip32 =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-cli =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-consensus-core =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-core =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-metrics-core =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-notify =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-rpc-core =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-rpc-service =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-utils =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-wallet-core = { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-wallet-keys =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-wrpc-client =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-wrpc-server =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-grpc-client =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondi-txscript =  { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
-tondid = { version = "1.0.2", git = "ssh://git@github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-addresses = { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-alloc =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-bip32 =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-cli =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-consensus-core =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-core =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-metrics-core =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-notify =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-rpc-core =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-rpc-service =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-utils =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-wallet-core = { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-wallet-keys =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-wrpc-client =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-wrpc-server =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-grpc-client =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondi-txscript =  { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
+tondid = { version = "1.0.2", git = "https://github.com/AvatoLabs/Tondi.git", branch = "main" }
 
 # bp-tondi dependency removed - using tondi-grpc-client instead
 
@@ -76,13 +76,12 @@ workflow-store = "0.18.0"
 workflow-wasm = "0.18.0"
 
 # ----------------------------------------
-# ----------------------------------------
-# ----------------------------------------
+
 
 ahash = "0.8.6"
 async-trait = "0.1.73"
 borsh = { version = "1.5.1", features = ["derive", "rc"] }
-cfg-if = "1.0.0"
+cfg-if = "1.0.2"
 chrome-sys = "0.2.0"
 chrono = "0.4.31"
 clap = { version = "4.4.7", features = ["derive", "string", "cargo"] }
