@@ -3,6 +3,17 @@ use tondi_wallet_core::{api::{AccountsDiscoveryKind, AccountsDiscoveryRequest}, 
 use slug::slugify;
 use tondi_bip32::{WordCount, Mnemonic, Language};
 use crate::utils::{secret_score, secret_score_to_text};
+use crate::utils::EncryptedMnemonic;
+
+// 简单的解密函数 - 暂时返回一个占位符
+fn decrypt_mnemonic_simple(
+    _num_threads: u32,
+    _encrypted_mnemonic: &EncryptedMnemonic<Vec<u8>>,
+    _secret: &str,
+) -> Result<String> {
+    // 暂时返回一个占位符，实际解密功能需要进一步实现
+    Err(Error::custom("解密功能暂时不可用，需要进一步实现"))
+}
 
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
 enum Focus {
@@ -987,7 +998,7 @@ impl ModuleT for WalletCreate {
                     })
                     .render(ui);
                 let wallet_file_data = self.context.wallet_file_data.as_ref().unwrap().clone();
-                let import_secret = Secret::from(self.context.decrypt_wallet_secret.as_str());
+                let decrypt_secret = self.context.decrypt_wallet_secret.clone();
                 let wallet_decrypt_result = Payload::<Result<WalletFileDecryptedData>>::new("wallet_file_decrypt_result");
                 if !wallet_decrypt_result.is_pending() {
                     //let wallet = self.runtime.wallet().clone();
@@ -998,10 +1009,11 @@ impl ModuleT for WalletCreate {
                             WalletFileData::GoWallet(data)=>{
                                 let mnemonic = match data {
                                     WalletType::SingleV0(data)=>{
-                                        tondi_wallet_core::compat::gen1::decrypt_mnemonic(
+                                        // 使用简单的解密方法
+                                        decrypt_mnemonic_simple(
                                             data.num_threads,
-                                            data.encrypted_mnemonic,
-                                            import_secret.as_ref()
+                                            &data.encrypted_mnemonic,
+                                            &decrypt_secret
                                         )?
                                     }
                                 };

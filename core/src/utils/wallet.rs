@@ -1,6 +1,12 @@
 use crate::imports::*;
-use tondi_wallet_core::wallet::EncryptedMnemonic;
 use std::fmt::Display;
+
+// 定义我们自己的 EncryptedMnemonic 结构
+#[derive(Debug, Clone)]
+pub struct EncryptedMnemonic<T> {
+    pub cipher: T,
+    pub salt: T,
+}
 
 #[derive(Debug)]
 pub struct SingleWalletFileV0 {

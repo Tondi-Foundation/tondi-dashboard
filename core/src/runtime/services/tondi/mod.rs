@@ -218,7 +218,7 @@ impl TondiService {
                 let rpc_api: Arc<DynRpcApi> = wrpc_client;
                 Ok(Rpc::new(rpc_api, rpc_ctl))
             }
-            RpcConfig::Grpc { url: _ } => {
+            RpcConfig::Grpc { url } => {
                 log_info!("[TONDI SERVICE] 使用gRPC配置");
                 cfg_if! {
                     if #[cfg(not(target_arch = "wasm32"))] {
