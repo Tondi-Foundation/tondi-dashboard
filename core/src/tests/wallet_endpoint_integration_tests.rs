@@ -5,6 +5,7 @@ use crate::imports::*;
 use tondi_bip32::{Mnemonic, WordCount, Language};
 use tondi_wallet_core::prelude::{EncryptionKind, Secret};
 use std::time::Duration;
+use tondi_wallet_core::storage::keydata::PrvKeyDataVariantKind;
 
 /// Integration test configuration
 #[derive(Clone)]
@@ -142,6 +143,7 @@ impl WalletEndpointIntegrationTests {
             Some("Test Private Key".to_string()),
             Some(payment_secret.clone()),
             mnemonic_phrase.into(),
+            PrvKeyDataVariantKind::Mnemonic
         );
         
         let prv_key_data_id = wallet.clone().prv_key_data_create(wallet_secret.clone(), prv_key_data_args).await?;

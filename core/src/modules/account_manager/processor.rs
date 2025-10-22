@@ -1,5 +1,5 @@
-use crate::imports::*;
 use super::*;
+use crate::imports::*;
 
 pub struct Processor<'context> {
     context: &'context mut ManagerContext,
@@ -10,9 +10,12 @@ impl<'context> Processor<'context> {
         Self { context }
     }
 
-    pub fn render(&mut self, core : &mut Core, ui: &mut Ui, rc : &RenderContext) {
-
-        let RenderContext { account, network_type, .. } = rc;
+    pub fn render(&mut self, core: &mut Core, ui: &mut Ui, rc: &RenderContext) {
+        let RenderContext {
+            account,
+            network_type,
+            ..
+        } = rc;
         let network_type = *network_type;
 
         ui.add_space(8.);
@@ -30,18 +33,16 @@ impl<'context> Processor<'context> {
 
         match &self.context.action {
             Action::Estimating => {
-
                 let request_estimate = Estimator::new(self.context).render(core, ui, rc);
 
                 if request_estimate {
-
                     let address = match network_type {
                         NetworkType::Mainnet => Address::try_from(
                             "tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7ezllr",
                         )
                         .unwrap(),
                         NetworkType::Testnet => Address::try_from(
-                            "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
+                            "tondi0:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp6f300",
                         )
                         .unwrap(),
                         NetworkType::Devnet => Address::try_from(
@@ -58,26 +59,37 @@ impl<'context> Processor<'context> {
 
                     let status = self.context.estimate.clone();
                     spawn(async move {
-
-                        let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sau, priority_fee_sau).await;
+                        let fee_rate = calculate_fee_rate(
+                            network_type,
+                            account_id,
+                            send_amount_sau,
+                            priority_fee_sau,
+                        )
+                        .await;
 
                         let payment_output = PaymentOutput {
                             address,
                             amount: send_amount_sau,
                         };
-    
+
                         let actual_request = AccountsEstimateRequest {
                             account_id,
                             destination: payment_output.into(),
-                            priority_fee_sau: Fees::SenderPays(fee_rate as u64),
+                            fee_rate: None,
+                            _priority_fee_sau: Fees::SenderPays(fee_rate as u64),
                             payload: None,
                         };
 
-                        let actual_result = runtime().wallet().accounts_estimate_call(actual_request).await;
+                        let actual_result = runtime()
+                            .wallet()
+                            .accounts_estimate_call(actual_request)
+                            .await;
 
                         match actual_result {
                             Ok(actual_estimate_response) => {
-                                *status.lock().unwrap() = EstimatorStatus::GeneratorSummary(actual_estimate_response.generator_summary);
+                                *status.lock().unwrap() = EstimatorStatus::GeneratorSummary(
+                                    actual_estimate_response.generator_summary,
+                                );
                             }
                             Err(error) => {
                                 *status.lock().unwrap() = EstimatorStatus::Error(error.to_string());
@@ -87,18 +99,19 @@ impl<'context> Processor<'context> {
                         runtime().egui_ctx().request_repaint();
                         Ok(())
                     });
-                } 
-
+                }
             }
 
             Action::Sending => {
-
                 let proceed_with_send = WalletSecret::new(self.context).render(ui, core, rc);
 
                 if proceed_with_send {
-
-                    if self.context.destination_address_string.is_not_empty() && self.context.transfer_to_account.is_some() {
-                        unreachable!("expecting only one of destination address or transfer to account");
+                    if self.context.destination_address_string.is_not_empty()
+                        && self.context.transfer_to_account.is_some()
+                    {
+                        unreachable!(
+                            "expecting only one of destination address or transfer to account"
+                        );
                     }
 
                     let priority_fee_sau = self.context.priority_fees_sau;
@@ -106,66 +119,93 @@ impl<'context> Processor<'context> {
                     // ---
 
                     let wallet_secret = Secret::from(self.context.wallet_secret.clone());
-                    let payment_secret = account.requires_bip39_passphrase(core).then_some(Secret::from(self.context.payment_secret.clone()));
+                    let payment_secret = account
+                        .requires_bip39_passphrase(core)
+                        .then_some(Secret::from(self.context.payment_secret.clone()));
 
                     match self.context.transaction_kind.unwrap() {
                         TransactionKind::Send => {
-
-                            let address = Address::try_from(self.context.destination_address_string.as_str()).expect("invalid address");
+                            let address =
+                                Address::try_from(self.context.destination_address_string.as_str())
+                                    .expect("invalid address");
                             let account_id = account.id();
                             let send_amount_sau = self.context.send_amount_sau;
                             let payment_output = PaymentOutput {
                                 address,
                                 amount: send_amount_sau,
                             };
-        
-                            spawn_with_result(&send_result, async move {
 
-                                let fee_rate = calculate_fee_rate(network_type, account_id, send_amount_sau, priority_fee_sau).await;
+                            spawn_with_result(&send_result, async move {
+                                let fee_rate = calculate_fee_rate(
+                                    network_type,
+                                    account_id,
+                                    send_amount_sau,
+                                    priority_fee_sau,
+                                )
+                                .await;
 
                                 let request = AccountsSendRequest {
                                     account_id,
                                     destination: payment_output.into(),
                                     wallet_secret,
                                     payment_secret,
-                                    priority_fee_sau: Fees::SenderPays(fee_rate as u64),
+                                    fee_rate: None,
+                                    _priority_fee_sau: Fees::SenderPays(fee_rate as u64),
                                     payload: None,
                                 };
-        
-                                let generator_summary = runtime().wallet().accounts_send_call(request).await?.generator_summary;
+
+                                let generator_summary = runtime()
+                                    .wallet()
+                                    .accounts_send_call(request)
+                                    .await?
+                                    .generator_summary;
                                 runtime().request_repaint();
                                 Ok(generator_summary)
                             });
-
                         }
 
                         TransactionKind::Transfer => {
-                            let destination_account_id = self.context.transfer_to_account.as_ref().expect("transfer destination account").id();
+                            let destination_account_id = self
+                                .context
+                                .transfer_to_account
+                                .as_ref()
+                                .expect("transfer destination account")
+                                .id();
                             let source_account_id = account.id();
                             let transfer_amount_sau = self.context.send_amount_sau;
 
                             spawn_with_result(&send_result, async move {
-                                let fee_rate = calculate_fee_rate(network_type, source_account_id, transfer_amount_sau, priority_fee_sau).await;
+                                let fee_rate = calculate_fee_rate(
+                                    network_type,
+                                    source_account_id,
+                                    transfer_amount_sau,
+                                    priority_fee_sau,
+                                )
+                                .await;
 
                                 let request = AccountsTransferRequest {
                                     source_account_id,
                                     destination_account_id,
                                     wallet_secret,
                                     payment_secret,
-                                    priority_fee_sau: Some(Fees::SenderPays(fee_rate as u64)),
+                                    fee_rate: None,
+                                    _priority_fee_sau: Some(Fees::SenderPays(fee_rate as u64)),
                                     transfer_amount_sau,
                                 };
-        
-                                let generator_summary = runtime().wallet().accounts_transfer_call(request).await?.generator_summary;
+
+                                let generator_summary = runtime()
+                                    .wallet()
+                                    .accounts_transfer_call(request)
+                                    .await?
+                                    .generator_summary;
                                 runtime().request_repaint();
                                 Ok(generator_summary)
                             });
                         }
                     }
-            
+
                     self.context.action = Action::Processing;
                 }
-
             }
             Action::Processing => {
                 ui.add_space(16.);
@@ -187,24 +227,27 @@ impl<'context> Processor<'context> {
                     }
                 }
             }
-            _ => { }
+            _ => {}
         }
-
     }
 }
 
-async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, send_amount_sau : u64, priority_fee_sau : u64) -> f64 {
-
+async fn calculate_fee_rate(
+    network_type: NetworkType,
+    account_id: AccountId,
+    send_amount_sau: u64,
+    priority_fee_sau: u64,
+) -> f64 {
     let address = match network_type {
         NetworkType::Mainnet => {
             Address::try_from("tondi:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7ezllr")
                 .unwrap()
         }
 
-        NetworkType::Testnet => Address::try_from(
-            "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
-        )
-        .unwrap(),
+        NetworkType::Testnet => {
+            Address::try_from("tondi0:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp6f300")
+                .unwrap()
+        }
         NetworkType::Devnet => Address::try_from(
             "tondidev:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqwf642s",
         )
@@ -217,17 +260,23 @@ async fn calculate_fee_rate(network_type : NetworkType, account_id : AccountId, 
         amount: send_amount_sau,
     };
 
-
     let base_request = AccountsEstimateRequest {
         account_id,
         destination: payment_output.clone().into(),
-        priority_fee_sau: Fees::SenderPays(0),
+        fee_rate: None,
+        _priority_fee_sau: Fees::SenderPays(0),
         payload: None,
     };
 
-    let base_result = runtime().wallet().accounts_estimate_call(base_request).await;
+    let base_result = runtime()
+        .wallet()
+        .accounts_estimate_call(base_request)
+        .await;
 
-    let base_mass = base_result.as_ref().map(|r| r.generator_summary.aggregated_fees).unwrap_or_default();
+    let base_mass = base_result
+        .as_ref()
+        .map(|r| r.generator_summary.aggregated_fees)
+        .unwrap_or_default();
 
     if base_mass == 0 {
         1.0
@@ -252,7 +301,7 @@ mod tests {
             ),
             (
                 Prefix::Testnet,
-                "tonditest:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5xhy7",
+                "tondi0:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp6f300",
             ),
             (
                 Prefix::Devnet,
@@ -263,7 +312,7 @@ mod tests {
         for (prefix, addr) in burn_addrs {
             assert_eq!(
                 Address::new(prefix, Version::PubKey, &[0u8; 32]),
-                Address::try_from(addr).unwrap()
+                Address::try_from(addr)
             );
         }
     }

@@ -1181,6 +1181,9 @@ impl Core {
                             );
                         }
                     }
+                    event => {
+                        unimplemented!("{event:?}");
+                    }
                 }
             }
         }

@@ -7,8 +7,10 @@ use tondi_rpc_core::{
     GetMetricsResponse,
     GetServerInfoResponse, GetConnectedPeerInfoResponse, GetBlockCountResponse, GetBlockDagInfoResponse,
     GetHeaderRequest, GetHeaderResponse,
+    GetUtxosByAddressRequest, GetUtxosByAddressResponse,
     RpcResult,
 };
+use tondi_rpc_core::api::connection::DynRpcConnection;
 use tondi_rpc_core::api::rpc::RpcApi;
 use tondi_consensus_core::api::BlockCount;
 
@@ -1769,5 +1771,13 @@ impl RpcApi for TondiGrpcClient {
 
     async fn stop_notify(&self, _id: u64, _scope: tondi_notify::scope::Scope) -> RpcResult<()> {
         Ok(())
+    }
+
+    async fn get_utxos_by_address_call(
+        &self,
+        connection: Option<&DynRpcConnection>,
+        request: GetUtxosByAddressRequest,
+    ) -> RpcResult<GetUtxosByAddressResponse> {
+        unimplemented!()
     }
 }

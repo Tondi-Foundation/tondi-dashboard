@@ -6,6 +6,7 @@ use tondi_wallet_core::tx::{PaymentOutput, Fees};
 use tondi_addresses::Address;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
+use tondi_wallet_core::storage::keydata::PrvKeyDataVariantKind;
 
 /// Wallet endpoint testing module with comprehensive test cases
 /// Tests wallet creation, account management, transactions, and all RPC endpoints
@@ -134,6 +135,7 @@ impl WalletEndpointTest {
             None,
             Some(payment_secret.clone()),
             mnemonic_phrase.into(),
+            PrvKeyDataVariantKind::Mnemonic,
         );
         
         let prv_key_data_id = wallet.clone().prv_key_data_create(wallet_secret.clone(), prv_key_data_args).await?;
@@ -208,7 +210,8 @@ impl WalletEndpointTest {
         let request = AccountsEstimateRequest {
             account_id,
             destination: payment_output.into(),
-            priority_fee_sau: Fees::None,
+            fee_rate: None,
+            _priority_fee_sau: Fees::None,
             payload: None,
         };
         
@@ -255,7 +258,8 @@ impl WalletEndpointTest {
         let estimate_request = AccountsEstimateRequest {
             account_id,
             destination: payment_output.clone().into(),
-            priority_fee_sau: Fees::None,
+            fee_rate: None,
+            _priority_fee_sau: Fees::None,
             payload: None,
         };
         

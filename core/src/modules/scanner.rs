@@ -282,7 +282,9 @@ impl ModuleT for Scanner {
                                     usize::MAX,
                                     64,
                                     transfer_funds,
+                                    None,
                                     &abortable,
+                                    true,
                                     Some(Arc::new(move |index,utxo_count, balance, txid|{
                                         if let Some(_txid) = txid {
                                             // println!("txid: {}", txid);
@@ -290,7 +292,7 @@ impl ModuleT for Scanner {
                                         } else {
                                             *status.lock().unwrap() = Status::processing(index, utxo_count, balance);
                                         }
-                                    }))
+                                    })),
                                 ).await?;
 
                         } else {

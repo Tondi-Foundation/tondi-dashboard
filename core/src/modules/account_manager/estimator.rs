@@ -40,25 +40,11 @@ impl<'context> Estimator<'context> {
             }
             EstimatorStatus::Error(error) => {
                 // ui.label(RichText::new(error.to_string()).color(theme_color().error_color));
-                (false, GeneratorSummary {
-                    network_id,
-                    aggregated_utxos: 0,
-                    aggregated_fees: 0,
-                    number_of_generated_transactions: 0,
-                    final_transaction_amount: None,
-                    final_transaction_id: None,
-                },Some(RichText::new(error.to_string()).color(theme_color().error_color)))
+                (false, GeneratorSummary::new(network_id), Some(RichText::new(error.to_string()).color(theme_color().error_color)))
             }
             EstimatorStatus::None => {
                 let err = i18n_args("Please enter {suffix} amount to send", &[("suffix", tondi_suffix(&network_type))]);
-                (false, GeneratorSummary {
-                    network_id,
-                    aggregated_utxos: 0,
-                    aggregated_fees: 0,
-                    number_of_generated_transactions: 0,
-                    final_transaction_amount: None,
-                    final_transaction_id: None,
-                },Some(RichText::new(err).color(theme_color().error_color)))
+                (false, GeneratorSummary::new(network_id), Some(RichText::new(err).color(theme_color().error_color)))
             }
         };
 

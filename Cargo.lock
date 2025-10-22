@@ -853,8 +853,9 @@ checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bitcoin"
-version = "0.32.6"
-source = "git+https://github.com/neomaxwell/rust-bitcoin.git?branch=bitcoin-0.32.6#a4b9bae8500407fb0921b5e0a2c82567ee27a8a6"
+version = "0.32.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fda569d741b895131a88ee5589a467e73e9c4718e958ac9308e4f7dc44b6945"
 dependencies = [
  "base58ck",
  "bech32",
@@ -1400,6 +1401,16 @@ dependencies = [
  "once_cell",
  "unicode-width 0.2.1",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "console_log"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be8aed40e4edbf4d3b4431ab260b63fdc40f5780a4766824329ea0f1eefe3c0f"
+dependencies = [
+ "log",
+ "web-sys",
 ]
 
 [[package]]
@@ -6205,6 +6216,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.10.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+dependencies = [
+ "digest",
+ "keccak",
+]
+
+[[package]]
 name = "shared_child"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6942,8 +6963,8 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "tondi-addresses"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "bech32",
  "borsh",
@@ -6958,8 +6979,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-addressmanager"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "borsh",
  "igd-next",
@@ -6980,20 +7001,21 @@ dependencies = [
 
 [[package]]
 name = "tondi-alloc"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "mimalloc",
 ]
 
 [[package]]
 name = "tondi-bip32"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "borsh",
  "bs58",
  "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "hmac",
  "js-sys",
  "once_cell",
@@ -7015,8 +7037,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-cli"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "borsh",
@@ -7063,8 +7085,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-connectionmanager"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "duration-string",
  "futures-util",
@@ -7081,8 +7103,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensus"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "arc-swap",
  "async-channel 2.5.0",
@@ -7125,8 +7147,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensus-client"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "ahash",
  "cfg-if 1.0.3",
@@ -7154,12 +7176,13 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensus-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "arc-swap",
  "async-trait",
  "bitcoin",
+ "blake3",
  "borsh",
  "cfg-if 1.0.3",
  "faster-hex",
@@ -7194,8 +7217,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensus-notify"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "cfg-if 1.0.3",
@@ -7214,8 +7237,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensus-wasm"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "cfg-if 1.0.3",
  "faster-hex",
@@ -7239,8 +7262,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-consensusmanager"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "duration-string",
  "futures",
@@ -7259,8 +7282,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "anyhow",
  "cfg-if 1.0.3",
@@ -7279,8 +7302,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-daemon"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "borsh",
@@ -7437,8 +7460,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-database"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "bincode",
  "enum-primitive-derive",
@@ -7460,8 +7483,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-grpc-client"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-stream",
@@ -7493,8 +7516,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-grpc-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-stream",
@@ -7524,8 +7547,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-grpc-server"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-stream",
@@ -7560,8 +7583,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-hashes"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "blake3",
  "borsh",
@@ -7577,8 +7600,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-index-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-trait",
@@ -7597,8 +7620,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-index-processor"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-trait",
@@ -7623,8 +7646,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-math"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "borsh",
  "faster-hex",
@@ -7643,16 +7666,16 @@ dependencies = [
 
 [[package]]
 name = "tondi-merkle"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "tondi-hashes",
 ]
 
 [[package]]
 name = "tondi-metrics-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "borsh",
@@ -7668,8 +7691,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-mining"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "futures-util",
  "itertools 0.13.0",
@@ -7694,8 +7717,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-mining-errors"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "thiserror 1.0.69",
  "tondi-consensus-core",
@@ -7703,8 +7726,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-muhash"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "rand_chacha 0.3.1",
  "serde",
@@ -7714,8 +7737,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-notify"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-trait",
@@ -7746,8 +7769,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-p2p-flows"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "chrono",
@@ -7780,8 +7803,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-p2p-lib"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "borsh",
  "ctrlc",
@@ -7811,8 +7834,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-p2p-mining"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "log",
  "tokio",
@@ -7829,8 +7852,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-perf-monitor"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "log",
  "portable-atomic",
@@ -7842,11 +7865,13 @@ dependencies = [
 
 [[package]]
 name = "tondi-pow"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
+ "blake3",
  "js-sys",
  "num",
+ "sha3",
  "tondi-consensus-client",
  "tondi-consensus-core",
  "tondi-hashes",
@@ -7858,8 +7883,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-rpc-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "async-trait",
@@ -7900,8 +7925,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-rpc-macros"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "convert_case 0.6.0",
  "proc-macro-error",
@@ -7913,8 +7938,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-rpc-service"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "log",
@@ -7944,8 +7969,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-txscript"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "bitcoin",
  "blake2b_simd",
@@ -7978,8 +8003,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-txscript-errors"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "secp256k1",
  "thiserror 1.0.69",
@@ -7987,8 +8012,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-utils"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "arc-swap",
  "async-channel 2.5.0",
@@ -8019,8 +8044,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-utils-tower"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "bytes",
  "cfg-if 1.0.3",
@@ -8036,8 +8061,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-utxoindex"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "futures",
  "log",
@@ -8056,8 +8081,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wallet-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "aes",
  "ahash",
@@ -8136,8 +8161,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wallet-keys"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "blake3",
@@ -8170,8 +8195,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wallet-macros"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "convert_case 0.5.0",
  "proc-macro-error",
@@ -8184,15 +8209,17 @@ dependencies = [
 
 [[package]]
 name = "tondi-wallet-pstt"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "bincode",
+ "console_log",
  "derive_builder",
  "futures",
  "hex",
  "js-sys",
  "secp256k1",
+ "separator",
  "serde",
  "serde-value",
  "serde-wasm-bindgen",
@@ -8212,8 +8239,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wasm-core"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "faster-hex",
  "hexplay",
@@ -8224,8 +8251,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wrpc-client"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-std",
  "async-trait",
@@ -8261,8 +8288,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wrpc-server"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-trait",
  "borsh",
@@ -8290,8 +8317,8 @@ dependencies = [
 
 [[package]]
 name = "tondi-wrpc-wasm"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "ahash",
  "async-std",
@@ -8321,8 +8348,8 @@ dependencies = [
 
 [[package]]
 name = "tondid"
-version = "1.0.2"
-source = "git+https://github.com/AvatoLabs/Tondi.git?branch=main#0e3ceb615c412ddac7af38a5a142593cad66afbe"
+version = "1.21.0"
+source = "git+ssh://git@github.com/AvatoLabs/Tondi.git?branch=main#18aef9a34d84359953450ee5d33240b2a6731d5e"
 dependencies = [
  "async-channel 2.5.0",
  "cfg-if 1.0.3",
